@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "configurations": {
+    "android": {
+      "packageId": "com.nutriscan.app",
+      "targetSdkVersion": 33,
+      "minSdkVersion": 23,
+      "handleBackButton": true,
+      "signingMode": "none"
+    }
+  }
+} 
