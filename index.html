@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -118,14 +118,38 @@
     <script>
         // Registrar el Service Worker
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
-                    .then(registration => {
-                        console.log('Service Worker registrado con éxito:', registration);
-                    })
-                    .catch(error => {
-                        console.log('Error al registrar el Service Worker:', error);
-                    });
+            window.addEventListener('load', async () => {
+                try {
+                    const registration = await navigator.serviceWorker.register('/service-worker.js');
+                    console.log('Service Worker registrado con éxito:', registration);
+
+                    // Solicitar permisos para notificaciones push
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                        const subscription = await registration.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: 'TU_VAPID_PUBLIC_KEY' // Reemplazar con tu clave pública VAPID
+                        });
+                        
+                        // Enviar la suscripción al servidor
+                        await fetch('/api/push-subscription', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(subscription)
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error al registrar el Service Worker:', error);
+                }
+            });
+        }
+
+        // Registrar para sincronización en segundo plano
+        if ('serviceWorker' in navigator && 'SyncManager' in window) {
+            navigator.serviceWorker.ready.then(registration => {
+                registration.sync.register('sync-records');
             });
         }
     </script>
