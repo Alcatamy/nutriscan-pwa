@@ -193,7 +193,7 @@
       "short_name": "Escanear",
       "description": "Abrir la cámara para escanear un alimento",
       "url": "./index.html?screen=camera",
-      "icons": [{ "src": "img/icons/icon-96x96.png", "sizes": "96x96" }]
+      "icons": [{ "src": "img/icons/scan-96x96.png", "sizes": "96x96" }]
     },
     {
       "name": "Historial",
