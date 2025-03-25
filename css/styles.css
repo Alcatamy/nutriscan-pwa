@@ -1,0 +1,464 @@
+/* Estilos generales */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+:root {
+  --primary-color: #4CAF50;
+  --primary-dark: #388E3C;
+  --primary-light: #C8E6C9;
+  --accent-color: #FF5722;
+  --text-primary: #212121;
+  --text-secondary: #757575;
+  --divider-color: #BDBDBD;
+  --background-color: #f8f8f8;
+  --card-color: #ffffff;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+body {
+  background-color: var(--background-color);
+  color: var(--text-primary);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+#app {
+  width: 100%;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Pantallas */
+.screen {
+  display: none;
+  width: 100%;
+  min-height: 100vh;
+  padding: 20px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition: transform 0.3s ease-in-out;
+  transform: translateX(100%);
+}
+
+.screen.active {
+  display: flex;
+  flex-direction: column;
+  transform: translateX(0);
+}
+
+/* Pantalla de inicio */
+#home-screen {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.logo-container {
+  margin-bottom: 40px;
+}
+
+.logo {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 20px;
+}
+
+h1 {
+  font-size: 32px;
+  color: var(--primary-color);
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 30px;
+}
+
+.primary-button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 15px 30px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px var(--shadow-color);
+  transition: background-color 0.3s, transform 0.2s;
+  margin: 10px 0;
+  width: 100%;
+  max-width: 300px;
+}
+
+.primary-button:hover, .primary-button:focus {
+  background-color: var(--primary-dark);
+  transform: translateY(-2px);
+}
+
+.primary-button:active {
+  transform: translateY(0);
+}
+
+.button-icon {
+  margin-right: 10px;
+  font-size: 20px;
+}
+
+.info-container {
+  background-color: var(--primary-light);
+  border-radius: 10px;
+  padding: 20px;
+  margin: 30px 0;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  color: var(--primary-dark);
+}
+
+.install-prompt {
+  background-color: var(--card-color);
+  border-radius: 10px;
+  padding: 15px;
+  margin-top: 20px;
+  box-shadow: 0 2px 4px var(--shadow-color);
+  display: none;
+  width: 100%;
+  max-width: 400px;
+}
+
+.secondary-button {
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.3s;
+}
+
+/* Pantalla de cámara */
+#camera-screen {
+  padding: 0;
+  background-color: #000;
+  color: white;
+}
+
+.camera-container {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 150px);
+  overflow: hidden;
+}
+
+#camera-view {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#camera-canvas {
+  display: none;
+}
+
+.camera-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.camera-frame {
+  width: 80%;
+  height: 60%;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.3);
+}
+
+.camera-controls {
+  position: absolute;
+  bottom: 80px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+.circle-button {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  border: 3px solid white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s;
+}
+
+.circle-button:active {
+  transform: scale(0.95);
+}
+
+.camera-guide {
+  position: absolute;
+  bottom: 30px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  color: white;
+  font-size: 14px;
+  padding: 0 20px;
+}
+
+/* Pantalla de carga */
+#loading-screen {
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 10;
+}
+
+.loading-container {
+  text-align: center;
+  color: white;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--primary-color);
+  animation: spin 1s ease-in-out infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Pantalla de resultados */
+#results-screen {
+  padding-top: 0;
+}
+
+.results-image-container {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+#captured-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+h2 {
+  font-size: 22px;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+}
+
+.food-list {
+  width: 100%;
+  margin-bottom: 30px;
+}
+
+.food-item {
+  background-color: var(--card-color);
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px var(--shadow-color);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.food-item:active {
+  transform: scale(0.98);
+}
+
+.food-info {
+  flex: 1;
+}
+
+.food-name {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.food-calories {
+  color: var(--primary-color);
+  font-size: 16px;
+  margin-bottom: 3px;
+}
+
+.food-portion {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.food-arrow {
+  color: var(--text-secondary);
+  font-size: 24px;
+}
+
+/* Pantalla de detalles */
+#details-screen {
+  padding-top: 0;
+}
+
+.details-header {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 30px 20px;
+  margin: -20px -20px 20px -20px;
+  text-align: center;
+}
+
+.details-header h2 {
+  color: white;
+  margin-bottom: 10px;
+}
+
+.calories {
+  font-size: 22px;
+  margin-bottom: 5px;
+}
+
+.portion {
+  font-size: 16px;
+  opacity: 0.8;
+}
+
+.details-card {
+  background-color: var(--card-color);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+h3 {
+  font-size: 18px;
+  margin-bottom: 15px;
+  color: var(--text-primary);
+}
+
+.nutrient-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--divider-color);
+}
+
+.nutrient-row:last-child {
+  border-bottom: none;
+}
+
+.nutrient-name {
+  color: var(--text-secondary);
+}
+
+.nutrient-value {
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.recommendation-text {
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+  .screen {
+    max-width: 500px;
+    margin: 0 auto;
+    box-shadow: 0 0 20px var(--shadow-color);
+    border-radius: 10px;
+    min-height: 90vh;
+    margin-top: 5vh;
+    position: relative;
+  }
+  
+  body {
+    background-color: #e0e0e0;
+  }
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Offline page */
+.offline-message {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.offline-icon {
+  font-size: 60px;
+  margin-bottom: 20px;
+  color: var(--text-secondary);
+}
+
+/* Accesibilidad */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* Soporte para modo oscuro */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary-color: #66BB6A;
+    --primary-dark: #43A047;
+    --primary-light: #1B5E20;
+    --accent-color: #FF7043;
+    --text-primary: #EEEEEE;
+    --text-secondary: #BDBDBD;
+    --divider-color: #424242;
+    --background-color: #121212;
+    --card-color: #1E1E1E;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+  }
+}

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="description" content="Aplicación de reconocimiento de alimentos y cálculo de calorías">
+    <title>NutriScan - Reconocimiento de Alimentos</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="img/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="img/icons/icon-192x192.png">
+</head>
+<body>
+    <div id="app">
+        <!-- Pantalla de inicio -->
+        <div id="home-screen" class="screen active">
+            <div class="logo-container">
+                <img src="img/logo.png" alt="NutriScan Logo" class="logo">
+                <h1>NutriScan</h1>
+                <p class="subtitle">Reconocimiento de alimentos y cálculo de calorías</p>
+            </div>
+            <button id="scan-button" class="primary-button">
+                <span class="button-icon">📷</span>
+                Escanear Alimento
+            </button>
+            <div class="info-container">
+                <p>Apunta la cámara a tu comida para identificarla y obtener información nutricional.</p>
+            </div>
+            <div class="install-prompt" id="install-prompt">
+                <p>Instala esta aplicación en tu dispositivo</p>
+                <button id="install-button" class="secondary-button">Instalar</button>
+            </div>
+        </div>
+
+        <!-- Pantalla de cámara -->
+        <div id="camera-screen" class="screen">
+            <div class="camera-container">
+                <video id="camera-view" autoplay playsinline></video>
+                <canvas id="camera-canvas"></canvas>
+                <div class="camera-overlay">
+                    <div class="camera-frame"></div>
+                </div>
+            </div>
+            <div class="camera-controls">
+                <button id="capture-button" class="circle-button">
+                    <span class="button-icon">📸</span>
+                </button>
+            </div>
+            <p class="camera-guide">Centra el alimento en el recuadro</p>
+        </div>
+
+        <!-- Pantalla de carga/procesamiento -->
+        <div id="loading-screen" class="screen">
+            <div class="loading-container">
+                <div class="spinner"></div>
+                <p>Analizando imagen...</p>
+            </div>
+        </div>
+
+        <!-- Pantalla de resultados -->
+        <div id="results-screen" class="screen">
+            <div class="results-image-container">
+                <img id="captured-image" src="" alt="Imagen capturada">
+            </div>
+            <h2>Alimentos Detectados</h2>
+            <div id="food-list" class="food-list">
+                <!-- Los elementos de comida se generarán dinámicamente -->
+            </div>
+            <button id="scan-again-button" class="primary-button">
+                Escanear Otro Alimento
+            </button>
+        </div>
+
+        <!-- Pantalla de detalles -->
+        <div id="details-screen" class="screen">
+            <div class="details-header">
+                <h2 id="food-name">Nombre del Alimento</h2>
+                <p id="food-calories" class="calories">0 kcal</p>
+                <p id="food-portion" class="portion">Porción</p>
+            </div>
+            <div class="details-card">
+                <h3>Información Nutricional</h3>
+                <div class="nutrient-row">
+                    <span class="nutrient-name">Proteínas</span>
+                    <span id="protein-value" class="nutrient-value">0g</span>
+                </div>
+                <div class="nutrient-row">
+                    <span class="nutrient-name">Carbohidratos</span>
+                    <span id="carbs-value" class="nutrient-value">0g</span>
+                </div>
+                <div class="nutrient-row">
+                    <span class="nutrient-name">Grasas</span>
+                    <span id="fat-value" class="nutrient-value">0g</span>
+                </div>
+                <div class="nutrient-row">
+                    <span class="nutrient-name">Fibra</span>
+                    <span id="fiber-value" class="nutrient-value">0g</span>
+                </div>
+            </div>
+            <div class="details-card">
+                <h3>Recomendaciones</h3>
+                <p id="recommendations" class="recommendation-text">
+                    Este alimento es una buena fuente de nutrientes esenciales. Recuerda mantener una dieta equilibrada y variada.
+                </p>
+            </div>
+            <button id="back-to-results-button" class="primary-button">
+                <span class="button-icon">←</span>
+                Volver a Resultados
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/app.js"></script>
+    <script src="js/camera.js"></script>
+    <script src="js/food-recognition.js"></script>
+    <script>
+        // Registrar el Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker registrado con éxito:', registration);
+                    })
+                    .catch(error => {
+                        console.log('Error al registrar el Service Worker:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
