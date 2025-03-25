@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriScan - Reconocimiento de Alimentos</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="description" content="Aplicación para reconocer alimentos y calcular calorías">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="NutriScan">
+    
+    <!-- PWA Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="img/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="img/icons/icon-192x192.png">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Estilos -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Pantalla de Inicio -->
+    <div id="home-screen" class="screen active">
+        <div class="logo-container">
+            <img src="img/logo.png" alt="NutriScan Logo" class="logo">
+            <h1>NutriScan</h1>
+            <p class="subtitle">Reconoce alimentos y calcula calorías al instante</p>
+        </div>
+        
+        <button id="scan-button" class="primary-button">
+            <span class="icon">📸</span>
+            Escanear Alimento
+        </button>
+        
+        <div id="install-prompt" class="install-prompt">
+            <span>Instala NutriScan para una mejor experiencia</span>
+            <button id="install-button" class="secondary-button">Instalar</button>
+        </div>
+    </div>
+    
+    <!-- Pantalla de Cámara -->
+    <div id="camera-screen" class="screen">
+        <div class="camera-container">
+            <video id="camera-view" autoplay playsinline></video>
+            <canvas id="camera-canvas" style="display: none;"></canvas>
+            <div class="camera-overlay">
+                <div class="camera-frame"></div>
+            </div>
+            <div class="camera-controls">
+                <button id="capture-button" class="circle-button">📸</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pantalla de Carga -->
+    <div id="loading-screen" class="screen">
+        <div class="loading-container">
+            <div class="spinner"></div>
+            <p>Analizando alimento...</p>
+        </div>
+    </div>
+    
+    <!-- Pantalla de Resultados -->
+    <div id="results-screen" class="screen">
+        <div class="results-image-container">
+            <img id="captured-image" alt="Alimento capturado">
+        </div>
+        
+        <div class="food-list" id="food-list">
+            <!-- Los resultados se insertarán aquí dinámicamente -->
+        </div>
+        
+        <button id="scan-again-button" class="primary-button">
+            <span class="icon">🔄</span>
+            Escanear Otro
+        </button>
+    </div>
+    
+    <!-- Pantalla de Detalles -->
+    <div id="details-screen" class="screen">
+        <div class="details-header">
+            <h2 id="food-name">Nombre del Alimento</h2>
+            <div class="calories" id="food-calories">0 kcal</div>
+            <div class="portion" id="food-portion">Porción</div>
+        </div>
+        
+        <div class="details-card">
+            <h3>Información Nutricional</h3>
+            <div class="nutrient-row">
+                <span class="nutrient-name">Proteínas</span>
+                <span class="nutrient-value" id="protein-value">0g</span>
+            </div>
+            <div class="nutrient-row">
+                <span class="nutrient-name">Carbohidratos</span>
+                <span class="nutrient-value" id="carbs-value">0g</span>
+            </div>
+            <div class="nutrient-row">
+                <span class="nutrient-name">Grasas</span>
+                <span class="nutrient-value" id="fat-value">0g</span>
+            </div>
+            <div class="nutrient-row">
+                <span class="nutrient-name">Fibra</span>
+                <span class="nutrient-value" id="fiber-value">0g</span>
+            </div>
+        </div>
+        
+        <div class="details-card">
+            <h3>Recomendaciones</h3>
+            <p id="recommendations"></p>
+        </div>
+        
+        <button id="back-to-results-button" class="secondary-button">
+            Volver a Resultados
+        </button>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="js/camera.js"></script>
+    <script src="js/food-recognition.js"></script>
+    <script src="js/app.js"></script>
+    
+    <!-- Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/nutriscan-pwa/service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker registrado con éxito:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('Error al registrar el Service Worker:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

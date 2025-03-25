@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4CAF50">
+    <title>NutriScan Widget</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 16px;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #ffffff;
+        }
+        .widget-container {
+            max-width: 100%;
+        }
+        .last-scans {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+        .scan-card {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+        .scan-image {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        .scan-name {
+            margin: 8px 0;
+            font-weight: 500;
+        }
+        .scan-calories {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .no-scans {
+            text-align: center;
+            color: #666;
+            padding: 32px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="widget-container">
+        <h2>Últimos Escaneos</h2>
+        <div id="last-scans" class="last-scans">
+            <!-- Los escaneos se cargarán dinámicamente -->
+        </div>
+    </div>
+
+    <script>
+        // Cargar últimos escaneos
+        async function loadLastScans() {
+            try {
+                const db = await openDatabase();
+                const scans = await db.getAll('scans');
+                
+                const lastScansContainer = document.getElementById('last-scans');
+                
+                if (scans.length === 0) {
+                    lastScansContainer.innerHTML = `
+                        <div class="no-scans">
+                            <p>No hay escaneos recientes</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Ordenar por fecha y tomar los últimos 4
+                const recentScans = scans
+                    .sort((a, b) => b.timestamp - a.timestamp)
+                    .slice(0, 4);
+
+                lastScansContainer.innerHTML = recentScans.map(scan => `
+                    <div class="scan-card">
+                        <img src="${scan.image}" alt="${scan.name}" class="scan-image">
+                        <div class="scan-name">${scan.name}</div>
+                        <div class="scan-calories">${scan.calories} kcal</div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error cargando escaneos:', error);
+            }
+        }
+
+        // Función para abrir la base de datos IndexedDB
+        function openDatabase() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('NutriScanDB', 1);
+
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => resolve(request.result);
+
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('scans')) {
+                        db.createObjectStore('scans', { keyPath: 'id' });
+                    }
+                };
+            });
+        }
+
+        // Cargar escaneos al iniciar
+        loadLastScans();
+
+        // Actualizar cada 5 minutos
+        setInterval(loadLastScans, 5 * 60 * 1000);
+    </script>
+</body>
+</html> 

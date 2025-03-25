@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriScan - Sin conexión</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .offline-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 80vh;
+            text-align: center;
+            padding: 20px;
+        }
+        .offline-icon {
+            font-size: 72px;
+            margin-bottom: 20px;
+            color: #757575;
+        }
+        .offline-title {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .offline-message {
+            font-size: 16px;
+            margin-bottom: 30px;
+            color: #757575;
+        }
+        .retry-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>NutriScan</h1>
+    </header>
+    
+    <main>
+        <div class="offline-container">
+            <div class="offline-icon">📶</div>
+            <h2 class="offline-title">Sin conexión a Internet</h2>
+            <p class="offline-message">No podemos conectarnos al servidor en este momento. Por favor, verifica tu conexión a Internet e inténtalo de nuevo.</p>
+            <button class="retry-button" onclick="window.location.reload()">Reintentar</button>
+        </div>
+    </main>
+
+    <script>
+        // Verificar cuando la conexión se restaure
+        window.addEventListener('online', () => {
+            window.location.reload();
+        });
+    </script>
+</body>
+</html>
