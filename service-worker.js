@@ -7,7 +7,13 @@ const STATIC_ASSETS = [
   '/js/camera.js',
   '/js/food-recognition.js',
   '/img/logo.png',
+  '/img/icons/icon-72x72.png',
+  '/img/icons/icon-96x96.png',
+  '/img/icons/icon-128x128.png',
+  '/img/icons/icon-144x144.png',
+  '/img/icons/icon-152x152.png',
   '/img/icons/icon-192x192.png',
+  '/img/icons/icon-384x384.png',
   '/img/icons/icon-512x512.png'
 ];
 
@@ -101,7 +107,7 @@ self.addEventListener('push', (event) => {
   const options = {
     body: event.data.text(),
     icon: '/img/icons/icon-192x192.png',
-    badge: '/img/icons/badge.png',
+    badge: '/img/icons/icon-72x72.png',
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
@@ -110,7 +116,7 @@ self.addEventListener('push', (event) => {
     actions: [
       {
         action: 'explore',
-        title: 'Ver más'
+        title: 'Ver detalles'
       },
       {
         action: 'close',
@@ -137,33 +143,36 @@ self.addEventListener('notificationclick', (event) => {
 
 // Manejar sincronización en segundo plano
 self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-records') {
-    event.waitUntil(syncRecords());
+  if (event.tag === 'sync-scans') {
+    event.waitUntil(syncScans());
   }
 });
 
-// Función para sincronizar registros con el servidor
-async function syncRecords() {
-  const db = await openDatabase();
-  const records = await db.getAll('scans');
-  
+// Función para sincronizar escaneos
+async function syncScans() {
   try {
-    const response = await fetch('/api/sync', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(records)
-    });
+    const db = await openDatabase();
+    const scans = await getPendingScans(db);
+    
+    for (const scan of scans) {
+      try {
+        const response = await fetch('/api/sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(scan)
+        });
 
-    if (response.ok) {
-      // Marcar registros como sincronizados
-      for (const record of records) {
-        await db.put('scans', { ...record, synced: true });
+        if (response.ok) {
+          await markScanAsSynced(db, scan.id);
+        }
+      } catch (error) {
+        console.error('Error syncing scan:', error);
       }
     }
   } catch (error) {
-    console.error('Error sincronizando registros:', error);
+    console.error('Error in sync process:', error);
   }
 }
 
