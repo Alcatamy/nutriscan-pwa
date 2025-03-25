@@ -262,3 +262,162 @@ document.addEventListener('DOMContentLoaded', () => {
   // Iniciar la aplicación
   init();
 });
+
+// Gestión de estados y navegación
+class App {
+    constructor() {
+        this.currentScreen = 'home';
+        this.deferredPrompt = null;
+        this.foodRecognition = new FoodRecognition();
+        
+        this.initializeEventListeners();
+        this.checkInstallPrompt();
+        this.handleShareTarget();
+    }
+
+    initializeEventListeners() {
+        // Botones de navegación
+        document.getElementById('scan-button').addEventListener('click', () => this.showScreen('camera'));
+        document.getElementById('scan-again-button').addEventListener('click', () => this.showScreen('camera'));
+        document.getElementById('back-to-results-button').addEventListener('click', () => this.showScreen('results'));
+        
+        // Botón de instalación
+        document.getElementById('install-button').addEventListener('click', () => this.installPWA());
+        
+        // Botón de captura
+        document.getElementById('capture-button').addEventListener('click', () => this.captureImage());
+    }
+
+    showScreen(screenId) {
+        // Ocultar todas las pantallas
+        document.querySelectorAll('.screen').forEach(screen => {
+            screen.classList.remove('active');
+        });
+        
+        // Mostrar la pantalla solicitada
+        document.getElementById(`${screenId}-screen`).classList.add('active');
+        
+        // Inicializar la cámara si es necesario
+        if (screenId === 'camera') {
+            initCamera();
+        }
+        
+        this.currentScreen = screenId;
+    }
+
+    async captureImage() {
+        try {
+            // Mostrar pantalla de carga
+            this.showScreen('loading');
+            
+            // Capturar imagen
+            const imageData = await captureFromCamera();
+            document.getElementById('captured-image').src = imageData;
+            
+            // Procesar imagen
+            const results = await this.foodRecognition.recognizeFood(imageData);
+            
+            // Mostrar resultados
+            this.showScreen('results');
+            this.displayResults(results);
+            
+            // Guardar en historial
+            await this.foodRecognition.saveScan({
+                image: imageData,
+                results: results,
+                timestamp: new Date()
+            });
+        } catch (error) {
+            console.error('Error capturando imagen:', error);
+            alert('Error al procesar la imagen. Por favor, inténtalo de nuevo.');
+            this.showScreen('camera');
+        }
+    }
+
+    displayResults(results) {
+        const foodList = document.getElementById('food-list');
+        foodList.innerHTML = '';
+        
+        results.forEach(food => {
+            const foodElement = this.createFoodElement(food);
+            foodList.appendChild(foodElement);
+        });
+    }
+
+    createFoodElement(food) {
+        const element = document.createElement('div');
+        element.className = 'food-item';
+        element.innerHTML = `
+            <img src="${food.image}" alt="${food.name}">
+            <div class="food-info">
+                <h3>${food.name}</h3>
+                <p>${food.calories} kcal</p>
+                <p>${food.portion}</p>
+            </div>
+        `;
+        
+        element.addEventListener('click', () => this.showFoodDetails(food));
+        return element;
+    }
+
+    async showFoodDetails(food) {
+        try {
+            const details = await this.foodRecognition.getNutritionalInfo(food.id);
+            
+            document.getElementById('food-name').textContent = details.name;
+            document.getElementById('food-calories').textContent = `${details.calories} kcal`;
+            document.getElementById('food-portion').textContent = details.portion;
+            document.getElementById('protein-value').textContent = `${details.protein}g`;
+            document.getElementById('carbs-value').textContent = `${details.carbs}g`;
+            document.getElementById('fat-value').textContent = `${details.fat}g`;
+            document.getElementById('fiber-value').textContent = `${details.fiber}g`;
+            document.getElementById('recommendations').textContent = details.recommendations;
+            
+            this.showScreen('details');
+        } catch (error) {
+            console.error('Error obteniendo detalles:', error);
+            alert('Error al cargar los detalles. Por favor, inténtalo de nuevo.');
+        }
+    }
+
+    checkInstallPrompt() {
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            this.deferredPrompt = e;
+            document.getElementById('install-prompt').style.display = 'flex';
+        });
+    }
+
+    async installPWA() {
+        if (!this.deferredPrompt) return;
+        
+        this.deferredPrompt.prompt();
+        const { outcome } = await this.deferredPrompt.userChoice;
+        
+        if (outcome === 'accepted') {
+            document.getElementById('install-prompt').style.display = 'none';
+        }
+    }
+
+    async handleShareTarget() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const action = urlParams.get('action');
+        
+        if (action === 'share') {
+            const db = await this.foodRecognition.openDatabase();
+            const shares = await db.getAll('pendingShares');
+            
+            if (shares.length > 0) {
+                const share = shares[0];
+                document.getElementById('captured-image').src = share.image;
+                await this.captureImage();
+                await db.delete('pendingShares', share.id);
+            }
+        }
+    }
+}
+
+// Inicializar la aplicación cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', () => {
+    window.app = new App();
+});

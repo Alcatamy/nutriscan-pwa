@@ -3,153 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#4CAF50">
-    <meta name="description" content="Aplicación de reconocimiento de alimentos y cálculo de calorías">
     <title>NutriScan - Reconocimiento de Alimentos</title>
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="img/icons/icon-192x192.png">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="description" content="Aplicación para reconocer alimentos y calcular calorías">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="NutriScan">
+    
+    <!-- PWA Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="img/icons/icon-192x192.png">
     <link rel="apple-touch-icon" href="img/icons/icon-192x192.png">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Estilos -->
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div id="app">
-        <!-- Pantalla de inicio -->
-        <div id="home-screen" class="screen active">
-            <div class="logo-container">
-                <img src="img/logo.png" alt="NutriScan Logo" class="logo">
-                <h1>NutriScan</h1>
-                <p class="subtitle">Reconocimiento de alimentos y cálculo de calorías</p>
-            </div>
-            <button id="scan-button" class="primary-button">
-                <span class="button-icon">📷</span>
-                Escanear Alimento
-            </button>
-            <div class="info-container">
-                <p>Apunta la cámara a tu comida para identificarla y obtener información nutricional.</p>
-            </div>
-            <div class="install-prompt" id="install-prompt">
-                <p>Instala esta aplicación en tu dispositivo</p>
-                <button id="install-button" class="secondary-button">Instalar</button>
-            </div>
+    <!-- Pantalla de Inicio -->
+    <div id="home-screen" class="screen active">
+        <div class="logo-container">
+            <img src="img/logo.png" alt="NutriScan Logo" class="logo">
+            <h1>NutriScan</h1>
+            <p class="subtitle">Reconoce alimentos y calcula calorías al instante</p>
         </div>
-
-        <!-- Pantalla de cámara -->
-        <div id="camera-screen" class="screen">
-            <div class="camera-container">
-                <video id="camera-view" autoplay playsinline></video>
-                <canvas id="camera-canvas"></canvas>
-                <div class="camera-overlay">
-                    <div class="camera-frame"></div>
-                </div>
-            </div>
-            <div class="camera-controls">
-                <button id="capture-button" class="circle-button">
-                    <span class="button-icon">📸</span>
-                </button>
-            </div>
-            <p class="camera-guide">Centra el alimento en el recuadro</p>
-        </div>
-
-        <!-- Pantalla de carga/procesamiento -->
-        <div id="loading-screen" class="screen">
-            <div class="loading-container">
-                <div class="spinner"></div>
-                <p>Analizando imagen...</p>
-            </div>
-        </div>
-
-        <!-- Pantalla de resultados -->
-        <div id="results-screen" class="screen">
-            <div class="results-image-container">
-                <img id="captured-image" src="" alt="Imagen capturada">
-            </div>
-            <h2>Alimentos Detectados</h2>
-            <div id="food-list" class="food-list">
-                <!-- Los elementos de comida se generarán dinámicamente -->
-            </div>
-            <button id="scan-again-button" class="primary-button">
-                Escanear Otro Alimento
-            </button>
-        </div>
-
-        <!-- Pantalla de detalles -->
-        <div id="details-screen" class="screen">
-            <div class="details-header">
-                <h2 id="food-name">Nombre del Alimento</h2>
-                <p id="food-calories" class="calories">0 kcal</p>
-                <p id="food-portion" class="portion">Porción</p>
-            </div>
-            <div class="details-card">
-                <h3>Información Nutricional</h3>
-                <div class="nutrient-row">
-                    <span class="nutrient-name">Proteínas</span>
-                    <span id="protein-value" class="nutrient-value">0g</span>
-                </div>
-                <div class="nutrient-row">
-                    <span class="nutrient-name">Carbohidratos</span>
-                    <span id="carbs-value" class="nutrient-value">0g</span>
-                </div>
-                <div class="nutrient-row">
-                    <span class="nutrient-name">Grasas</span>
-                    <span id="fat-value" class="nutrient-value">0g</span>
-                </div>
-                <div class="nutrient-row">
-                    <span class="nutrient-name">Fibra</span>
-                    <span id="fiber-value" class="nutrient-value">0g</span>
-                </div>
-            </div>
-            <div class="details-card">
-                <h3>Recomendaciones</h3>
-                <p id="recommendations" class="recommendation-text">
-                    Este alimento es una buena fuente de nutrientes esenciales. Recuerda mantener una dieta equilibrada y variada.
-                </p>
-            </div>
-            <button id="back-to-results-button" class="primary-button">
-                <span class="button-icon">←</span>
-                Volver a Resultados
-            </button>
+        
+        <button id="scan-button" class="primary-button">
+            <span class="icon">📸</span>
+            Escanear Alimento
+        </button>
+        
+        <div id="install-prompt" class="install-prompt">
+            <span>Instala NutriScan para una mejor experiencia</span>
+            <button id="install-button" class="secondary-button">Instalar</button>
         </div>
     </div>
-
+    
+    <!-- Pantalla de Cámara -->
+    <div id="camera-screen" class="screen">
+        <div class="camera-container">
+            <video id="camera-view" autoplay playsinline></video>
+            <canvas id="camera-canvas" style="display: none;"></canvas>
+            <div class="camera-overlay">
+                <div class="camera-frame"></div>
+            </div>
+            <div class="camera-controls">
+                <button id="capture-button" class="circle-button">📸</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pantalla de Carga -->
+    <div id="loading-screen" class="screen">
+        <div class="loading-container">
+            <div class="spinner"></div>
+            <p>Analizando alimento...</p>
+        </div>
+    </div>
+    
+    <!-- Pantalla de Resultados -->
+    <div id="results-screen" class="screen">
+        <div class="results-image-container">
+            <img id="captured-image" alt="Alimento capturado">
+        </div>
+        
+        <div class="food-list" id="food-list">
+            <!-- Los resultados se insertarán aquí dinámicamente -->
+        </div>
+        
+        <button id="scan-again-button" class="primary-button">
+            <span class="icon">🔄</span>
+            Escanear Otro
+        </button>
+    </div>
+    
+    <!-- Pantalla de Detalles -->
+    <div id="details-screen" class="screen">
+        <div class="details-header">
+            <h2 id="food-name">Nombre del Alimento</h2>
+            <div class="calories" id="food-calories">0 kcal</div>
+            <div class="portion" id="food-portion">Porción</div>
+        </div>
+        
+        <div class="details-card">
+            <h3>Información Nutricional</h3>
+            <div class="nutrient-row">
+                <span class="nutrient-name">Proteínas</span>
+                <span class="nutrient-value" id="protein-value">0g</span>
+            </div>
+            <div class="nutrient-row">
+                <span class="nutrient-name">Carbohidratos</span>
+                <span class="nutrient-value" id="carbs-value">0g</span>
+            </div>
+            <div class="nutrient-row">
+                <span class="nutrient-name">Grasas</span>
+                <span class="nutrient-value" id="fat-value">0g</span>
+            </div>
+            <div class="nutrient-row">
+                <span class="nutrient-name">Fibra</span>
+                <span class="nutrient-value" id="fiber-value">0g</span>
+            </div>
+        </div>
+        
+        <div class="details-card">
+            <h3>Recomendaciones</h3>
+            <p id="recommendations"></p>
+        </div>
+        
+        <button id="back-to-results-button" class="secondary-button">
+            Volver a Resultados
+        </button>
+    </div>
+    
     <!-- Scripts -->
-    <script src="js/app.js"></script>
     <script src="js/camera.js"></script>
     <script src="js/food-recognition.js"></script>
+    <script src="js/app.js"></script>
+    
+    <!-- Service Worker -->
     <script>
-        // Registrar el Service Worker
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', async () => {
-                try {
-                    const registration = await navigator.serviceWorker.register('/service-worker.js');
-                    console.log('Service Worker registrado con éxito:', registration);
-
-                    // Solicitar permisos para notificaciones push
-                    const permission = await Notification.requestPermission();
-                    if (permission === 'granted') {
-                        const subscription = await registration.pushManager.subscribe({
-                            userVisibleOnly: true,
-                            applicationServerKey: 'TU_VAPID_PUBLIC_KEY' // Reemplazar con tu clave pública VAPID
-                        });
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registrado:', registration);
                         
-                        // Enviar la suscripción al servidor
-                        await fetch('/api/push-subscription', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(subscription)
+                        // Solicitar permisos para notificaciones
+                        Notification.requestPermission().then(permission => {
+                            if (permission === 'granted') {
+                                // Suscribirse a notificaciones push
+                                registration.pushManager.subscribe({
+                                    userVisibleOnly: true,
+                                    applicationServerKey: 'BDHIKPOWzkSZWts82T2AS-Ik3A158guFWFlP71yllPDnkgWlMtTX4g2M6ZkG733tTX6_LmMihXmSsVXpyaKFxTg'
+                                })
+                                .then(subscription => {
+                                    // Enviar suscripción al servidor
+                                    fetch('/api/push-subscription', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json'
+                                        },
+                                        body: JSON.stringify(subscription)
+                                    });
+                                });
+                            }
                         });
-                    }
-                } catch (error) {
-                    console.error('Error al registrar el Service Worker:', error);
-                }
-            });
-        }
-
-        // Registrar para sincronización en segundo plano
-        if ('serviceWorker' in navigator && 'SyncManager' in window) {
-            navigator.serviceWorker.ready.then(registration => {
-                registration.sync.register('sync-records');
+                    })
+                    .catch(error => {
+                        console.error('Error registrando ServiceWorker:', error);
+                    });
             });
         }
     </script>

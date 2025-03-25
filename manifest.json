@@ -1,9 +1,9 @@
 {
   "id": "nutriscan-app",
-  "name": "NutriScan - Reconocimiento de Alimentos",
+  "name": "NutriScan",
   "short_name": "NutriScan",
-  "description": "Aplicación de reconocimiento de alimentos y cálculo de calorías",
-  "start_url": "/index.html",
+  "description": "Aplicación para reconocer alimentos y calcular calorías",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -12,102 +12,94 @@
   "dir": "ltr",
   "lang": "es",
   "prefer_related_applications": false,
+  "protocol_handlers": [
+    {
+      "protocol": "web+nutriscan",
+      "url": "/?action=%s"
+    }
+  ],
+  "share_target": {
+    "action": "/share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "image",
+          "accept": ["image/*"]
+        }
+      ]
+    }
+  },
+  "widgets": [
+    {
+      "name": "NutriScan Widget",
+      "short_name": "NutriScan",
+      "description": "Muestra tus últimos escaneos de alimentos",
+      "start_url": "/widget.html",
+      "display": "standalone",
+      "background_color": "#ffffff",
+      "theme_color": "#4CAF50",
+      "icons": [
+        {
+          "src": "img/icons/icon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
   "icons": [
     {
       "src": "img/icons/icon-72x72.png",
       "sizes": "72x72",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "img/icons/icon-72x72-maskable.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     },
     {
       "src": "img/icons/icon-96x96.png",
       "sizes": "96x96",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "img/icons/icon-96x96-maskable.png",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     },
     {
       "src": "img/icons/icon-128x128.png",
       "sizes": "128x128",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "img/icons/icon-128x128-maskable.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     },
     {
       "src": "img/icons/icon-144x144.png",
       "sizes": "144x144",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "img/icons/icon-144x144-maskable.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     },
     {
       "src": "img/icons/icon-152x152.png",
       "sizes": "152x152",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "img/icons/icon-152x152-maskable.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     },
     {
       "src": "img/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "img/icons/icon-192x192-maskable.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     },
     {
       "src": "img/icons/icon-384x384.png",
       "sizes": "384x384",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "img/icons/icon-384x384-maskable.png",
-      "sizes": "384x384",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     },
     {
       "src": "img/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "img/icons/icon-512x512-maskable.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ],
   "display_override": ["window-controls-overlay", "standalone"],
@@ -151,17 +143,23 @@
     {
       "src": "img/screenshots/home.png",
       "sizes": "1080x1920",
-      "type": "image/png"
+      "type": "image/png",
+      "platform": "narrow",
+      "label": "Pantalla de inicio de NutriScan"
     },
     {
       "src": "img/screenshots/camera.png",
       "sizes": "1080x1920",
-      "type": "image/png"
+      "type": "image/png",
+      "platform": "narrow",
+      "label": "Escaneo de alimentos"
     },
     {
       "src": "img/screenshots/results.png",
       "sizes": "1080x1920",
-      "type": "image/png"
+      "type": "image/png",
+      "platform": "narrow",
+      "label": "Resultados del análisis"
     }
   ],
   "categories": ["food", "health", "lifestyle"],
@@ -169,9 +167,16 @@
     {
       "name": "Escanear Alimento",
       "short_name": "Escanear",
-      "description": "Abrir la cámara para escanear un alimento",
-      "url": "/index.html?screen=camera",
-      "icons": [{ "src": "img/icons/scan-96x96.png", "sizes": "96x96" }]
+      "description": "Abre la cámara para escanear un alimento",
+      "url": "/?action=scan",
+      "icons": [{ "src": "img/icons/scan.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Historial",
+      "short_name": "Historial",
+      "description": "Ver historial de escaneos",
+      "url": "/?action=history",
+      "icons": [{ "src": "img/icons/history.png", "sizes": "192x192" }]
     }
   ]
 }

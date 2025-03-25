@@ -306,3 +306,151 @@ function calculateTotalMacros(foods) {
     fiber: totals.fiber.toFixed(1) + 'g'
   };
 }
+
+// Clase para manejar el reconocimiento de alimentos
+class FoodRecognition {
+    constructor() {
+        this.API_ENDPOINT = '/api';
+        this.DB_NAME = 'NutriScanDB';
+        this.DB_VERSION = 1;
+    }
+
+    async initDatabase() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
+
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => resolve(request.result);
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+
+                // Crear almacén para escaneos
+                if (!db.objectStoreNames.contains('scans')) {
+                    const scanStore = db.createObjectStore('scans', { keyPath: 'id' });
+                    scanStore.createIndex('timestamp', 'timestamp');
+                    scanStore.createIndex('synced', 'synced');
+                }
+
+                // Crear almacén para alimentos
+                if (!db.objectStoreNames.contains('foods')) {
+                    const foodStore = db.createObjectStore('foods', { keyPath: 'id' });
+                    foodStore.createIndex('name', 'name');
+                }
+            };
+        });
+    }
+
+    async saveScan(scanData) {
+        const db = await this.initDatabase();
+        const scan = {
+            id: Date.now(),
+            ...scanData,
+            synced: false
+        };
+        await db.add('scans', scan);
+        return scan;
+    }
+
+    async getScanHistory() {
+        const db = await this.initDatabase();
+        return db.getAllFromIndex('scans', 'timestamp');
+    }
+
+    async recognizeFood(imageData) {
+        try {
+            // Enviar imagen al servidor para reconocimiento
+            const response = await fetch(`${this.API_ENDPOINT}/recognize-food`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image: imageData })
+            });
+
+            if (!response.ok) {
+                throw new Error('Error en el reconocimiento de alimentos');
+            }
+
+            const results = await response.json();
+            
+            // Guardar alimentos en la base de datos local
+            const db = await this.initDatabase();
+            for (const food of results) {
+                await db.put('foods', food);
+            }
+
+            return results;
+        } catch (error) {
+            console.error('Error en reconocimiento:', error);
+            throw error;
+        }
+    }
+
+    async getNutritionalInfo(foodId) {
+        try {
+            // Primero intentar obtener de la base de datos local
+            const db = await this.initDatabase();
+            const food = await db.get('foods', foodId);
+
+            if (food) {
+                return food;
+            }
+
+            // Si no está en local, obtener del servidor
+            const response = await fetch(`${this.API_ENDPOINT}/food/${foodId}`);
+            
+            if (!response.ok) {
+                throw new Error('Error obteniendo información nutricional');
+            }
+
+            const foodData = await response.json();
+            
+            // Guardar en la base de datos local
+            await db.put('foods', foodData);
+
+            return foodData;
+        } catch (error) {
+            console.error('Error obteniendo información nutricional:', error);
+            throw error;
+        }
+    }
+
+    async syncData() {
+        try {
+            const db = await this.initDatabase();
+            const unsyncedScans = await db.getAllFromIndex('scans', 'synced', IDBKeyRange.only(false));
+
+            if (unsyncedScans.length === 0) {
+                return;
+            }
+
+            const response = await fetch(`${this.API_ENDPOINT}/sync`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(unsyncedScans)
+            });
+
+            if (!response.ok) {
+                throw new Error('Error sincronizando datos');
+            }
+
+            // Marcar escaneos como sincronizados
+            for (const scan of unsyncedScans) {
+                await db.put('scans', { ...scan, synced: true });
+            }
+        } catch (error) {
+            console.error('Error sincronizando datos:', error);
+            throw error;
+        }
+    }
+
+    async openDatabase() {
+        return this.initDatabase();
+    }
+}
+
+// Exportar la clase
+window.FoodRecognition = FoodRecognition;

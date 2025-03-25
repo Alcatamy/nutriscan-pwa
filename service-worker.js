@@ -38,28 +38,53 @@ self.addEventListener('activate', (event) => {
 
 // Interceptar peticiones
 self.addEventListener('fetch', (event) => {
+  // Manejar protocol handler
+  if (event.request.url.startsWith('web+nutriscan://')) {
+    event.respondWith(
+      caches.match('/index.html').then(response => {
+        return response;
+      })
+    );
+    return;
+  }
+
+  // Manejar share target
+  if (event.request.method === 'POST' && event.request.url.includes('?action=share')) {
+    event.respondWith(
+      (async () => {
+        const formData = await event.request.formData();
+        const image = formData.get('image');
+        
+        // Guardar la imagen en IndexedDB
+        const db = await openDatabase();
+        await db.add('pendingShares', {
+          id: Date.now(),
+          image: URL.createObjectURL(image),
+          timestamp: new Date()
+        });
+
+        // Redirigir a la página principal
+        return Response.redirect('/index.html');
+      })()
+    );
+    return;
+  }
+
+  // Estrategia de caché para otros recursos
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Retornar respuesta del cache si existe
         if (response) {
           return response;
         }
 
-        // Clonar la petición
         const fetchRequest = event.request.clone();
-
-        // Hacer la petición a la red
         return fetch(fetchRequest).then((response) => {
-          // Verificar si la respuesta es válida
           if (!response || response.status !== 200 || response.type !== 'basic') {
             return response;
           }
 
-          // Clonar la respuesta
           const responseToCache = response.clone();
-
-          // Guardar en cache
           caches.open(CACHE_NAME)
             .then((cache) => {
               cache.put(event.request, responseToCache);
@@ -76,7 +101,7 @@ self.addEventListener('push', (event) => {
   const options = {
     body: event.data.text(),
     icon: '/img/icons/icon-192x192.png',
-    badge: '/img/icons/icon-72x72.png',
+    badge: '/img/icons/badge.png',
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
@@ -117,18 +142,25 @@ self.addEventListener('sync', (event) => {
   }
 });
 
-// Función para sincronizar registros
+// Función para sincronizar registros con el servidor
 async function syncRecords() {
+  const db = await openDatabase();
+  const records = await db.getAll('scans');
+  
   try {
-    const db = await openDatabase();
-    const records = await db.getAll('pendingRecords');
-    
-    for (const record of records) {
-      await fetch('/api/sync', {
-        method: 'POST',
-        body: JSON.stringify(record)
-      });
-      await db.delete('pendingRecords', record.id);
+    const response = await fetch('/api/sync', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(records)
+    });
+
+    if (response.ok) {
+      // Marcar registros como sincronizados
+      for (const record of records) {
+        await db.put('scans', { ...record, synced: true });
+      }
     }
   } catch (error) {
     console.error('Error sincronizando registros:', error);
@@ -145,8 +177,23 @@ function openDatabase() {
 
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
-      if (!db.objectStoreNames.contains('pendingRecords')) {
-        db.createObjectStore('pendingRecords', { keyPath: 'id' });
+      
+      // Crear almacén para escaneos
+      if (!db.objectStoreNames.contains('scans')) {
+        const scanStore = db.createObjectStore('scans', { keyPath: 'id' });
+        scanStore.createIndex('timestamp', 'timestamp');
+        scanStore.createIndex('synced', 'synced');
+      }
+
+      // Crear almacén para alimentos
+      if (!db.objectStoreNames.contains('foods')) {
+        const foodStore = db.createObjectStore('foods', { keyPath: 'id' });
+        foodStore.createIndex('name', 'name');
+      }
+
+      // Crear almacén para shares pendientes
+      if (!db.objectStoreNames.contains('pendingShares')) {
+        db.createObjectStore('pendingShares', { keyPath: 'id' });
       }
     };
   });
