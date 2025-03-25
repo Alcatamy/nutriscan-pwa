@@ -1,24 +1,24 @@
 const CACHE_NAME = 'nutriscan-v1';
-const OFFLINE_URL = 'offline.html';
+const OFFLINE_URL = './offline.html';
 
 // Archivos a cachear inicialmente
 const INITIAL_CACHED_RESOURCES = [
-  '/nutriscan-pwa/',
-  '/nutriscan-pwa/index.html',
-  '/nutriscan-pwa/offline.html',
-  '/nutriscan-pwa/css/styles.css',
-  '/nutriscan-pwa/js/app.js',
-  '/nutriscan-pwa/js/camera.js',
-  '/nutriscan-pwa/js/food-recognition.js',
-  '/nutriscan-pwa/manifest.json',
-  '/nutriscan-pwa/img/icons/icon-72x72.png',
-  '/nutriscan-pwa/img/icons/icon-96x96.png',
-  '/nutriscan-pwa/img/icons/icon-128x128.png',
-  '/nutriscan-pwa/img/icons/icon-144x144.png',
-  '/nutriscan-pwa/img/icons/icon-152x152.png',
-  '/nutriscan-pwa/img/icons/icon-192x192.png',
-  '/nutriscan-pwa/img/icons/icon-384x384.png',
-  '/nutriscan-pwa/img/icons/icon-512x512.png'
+  './',
+  './index.html',
+  './offline.html',
+  './css/styles.css',
+  './js/app.js',
+  './js/camera.js',
+  './js/food-recognition.js',
+  './manifest.json',
+  './img/icons/icon-72x72.png',
+  './img/icons/icon-96x96.png',
+  './img/icons/icon-128x128.png',
+  './img/icons/icon-144x144.png',
+  './img/icons/icon-152x152.png',
+  './img/icons/icon-192x192.png',
+  './img/icons/icon-384x384.png',
+  './img/icons/icon-512x512.png'
 ];
 
 // Instalar el service worker y cachear archivos iniciales
@@ -137,8 +137,8 @@ self.addEventListener('push', (event) => {
   if (event.data) {
     const options = {
       body: event.data.text(),
-      icon: '/nutriscan-pwa/img/icons/icon-192x192.png',
-      badge: '/nutriscan-pwa/img/icons/icon-72x72.png',
+      icon: './img/icons/icon-192x192.png',
+      badge: './img/icons/icon-72x72.png',
       vibrate: [100, 50, 100],
       data: {
         dateOfArrival: Date.now(),
@@ -162,13 +162,26 @@ self.addEventListener('push', (event) => {
   }
 });
 
+// Sincronización periódica
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === 'update-content') {
+    event.waitUntil(updateContent());
+  }
+});
+
+// Función para actualizar contenido periódicamente
+async function updateContent() {
+  console.log('[Service Worker] Updating content periodically');
+  // Aquí iría la lógica para actualizar el contenido en segundo plano
+}
+
 // Manejo de clics en notificaciones
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
   if (event.action === 'explore') {
     event.waitUntil(
-      clients.openWindow('/nutriscan-pwa/index.html')
+      clients.openWindow('./index.html')
     );
   }
 });

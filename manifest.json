@@ -3,8 +3,8 @@
   "name": "NutriScan - Reconocimiento de Alimentos",
   "short_name": "NutriScan",
   "description": "Aplicación para reconocer alimentos mediante la cámara y calcular calorías",
-  "start_url": "/nutriscan-pwa/index.html",
-  "scope": "/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4CAF50",
@@ -39,7 +39,7 @@
       "name": "NutriScan Widget",
       "short_name": "NutriScan",
       "description": "Muestra tus últimos escaneos de alimentos",
-      "start_url": "/widget.html",
+      "start_url": "./widget.html",
       "display": "standalone",
       "background_color": "#ffffff",
       "theme_color": "#4CAF50",
@@ -165,21 +165,21 @@
   "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
   "screenshots": [
     {
-      "src": "/img/screenshots/home.png",
+      "src": "img/screenshots/home.png",
       "sizes": "1080x1920",
       "type": "image/png",
       "platform": "narrow",
       "label": "Pantalla principal de NutriScan"
     },
     {
-      "src": "/img/screenshots/scan.png",
+      "src": "img/screenshots/scan.png",
       "sizes": "1080x1920",
       "type": "image/png",
       "platform": "narrow",
       "label": "Escaneando un alimento"
     },
     {
-      "src": "/img/screenshots/results.png",
+      "src": "img/screenshots/results.png",
       "sizes": "1080x1920",
       "type": "image/png",
       "platform": "narrow",
@@ -192,15 +192,15 @@
       "name": "Escanear Alimento",
       "short_name": "Escanear",
       "description": "Abrir la cámara para escanear un alimento",
-      "url": "/nutriscan-pwa/index.html?screen=camera",
-      "icons": [{ "src": "img/icons/scan-96x96.png", "sizes": "96x96" }]
+      "url": "./index.html?screen=camera",
+      "icons": [{ "src": "img/icons/icon-96x96.png", "sizes": "96x96" }]
     },
     {
       "name": "Historial",
       "short_name": "Historial",
       "description": "Ver historial de escaneos",
-      "url": "/?action=history",
-      "icons": [{ "src": "/img/icons/icon-96x96.png", "sizes": "96x96" }]
+      "url": "./?action=history",
+      "icons": [{ "src": "img/icons/icon-96x96.png", "sizes": "96x96" }]
     }
   ]
 }
