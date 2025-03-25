@@ -1,62 +1,152 @@
 {
+  "id": "nutriscan-app",
   "name": "NutriScan - Reconocimiento de Alimentos",
   "short_name": "NutriScan",
   "description": "Aplicación de reconocimiento de alimentos y cálculo de calorías",
   "start_url": "/index.html",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4CAF50",
   "orientation": "portrait",
+  "dir": "ltr",
+  "lang": "es",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "img/icons/icon-72x72.png",
       "sizes": "72x72",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "img/icons/icon-72x72-maskable.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "img/icons/icon-96x96.png",
       "sizes": "96x96",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "img/icons/icon-96x96-maskable.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "img/icons/icon-128x128.png",
       "sizes": "128x128",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "img/icons/icon-128x128-maskable.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "img/icons/icon-144x144.png",
       "sizes": "144x144",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "img/icons/icon-144x144-maskable.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "img/icons/icon-152x152.png",
       "sizes": "152x152",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "img/icons/icon-152x152-maskable.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "img/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "img/icons/icon-192x192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "img/icons/icon-384x384.png",
       "sizes": "384x384",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "img/icons/icon-384x384-maskable.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "img/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "img/icons/icon-512x512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
+  "display_override": ["window-controls-overlay", "standalone"],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "file_handlers": [
+    {
+      "action": "/index.html",
+      "accept": {
+        "image/*": [".png", ".jpg", ".jpeg"]
+      }
+    }
+  ],
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+  "background_sync": {
+    "periodic_sync": {
+      "min_interval": 3600
+    }
+  },
+  "push": {
+    "subscription_url": "/api/push-subscription"
+  },
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.nutriscan.app",
+      "id": "com.nutriscan.app"
+    }
+  ],
+  "scope_extensions": [
+    {
+      "origin": "https://nutriscan.app"
+    }
+  ],
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
   "screenshots": [
     {
       "src": "img/screenshots/home.png",
