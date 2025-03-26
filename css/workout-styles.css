@@ -1,0 +1,574 @@
+/* Estilos para la sección de recomendaciones de entrenamiento usando IA */
+
+/* Contenedor principal de entrenamientos */
+.workouts-container {
+    padding: 15px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Cabecera con título y botones de acción */
+.workouts-header {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+}
+
+.workouts-header h2 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+.workouts-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+/* Tarjeta de introducción */
+.workout-intro-card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 15px;
+}
+
+.workout-intro-card h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.workout-intro-card p {
+    margin-bottom: 15px;
+    color: #666;
+    line-height: 1.5;
+}
+
+.ai-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background-color: rgba(var(--primary-rgb), 0.1);
+    color: var(--primary-color);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-bottom: 10px;
+}
+
+/* Contenedor de detalles del entrenamiento */
+#workout-container {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    display: none;
+    margin-bottom: 20px;
+}
+
+#workout-container.active {
+    display: block;
+}
+
+/* Detalles del entrenamiento */
+#workout-details {
+    padding: 20px;
+}
+
+.workout-header {
+    margin-bottom: 20px;
+}
+
+.workout-header h2 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.workout-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    color: #666;
+}
+
+.workout-meta span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.workout-justification {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.workout-justification h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1rem;
+    color: #333;
+}
+
+.workout-justification p {
+    margin: 0;
+    color: #666;
+    line-height: 1.5;
+}
+
+/* Secciones del entrenamiento */
+.workout-section {
+    margin-bottom: 20px;
+}
+
+.workout-section h3 {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+    color: #333;
+}
+
+.workout-section h3 i {
+    color: var(--primary-color);
+}
+
+/* Lista de ejercicios */
+.exercise-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.exercise-item {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    padding: 12px;
+    border-left: 3px solid var(--primary-color);
+}
+
+.exercise-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.exercise-name {
+    font-weight: 600;
+    color: #333;
+}
+
+.exercise-duration, .exercise-sets {
+    font-weight: 500;
+    color: #666;
+}
+
+.exercise-details {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.exercise-rest {
+    font-size: 0.9rem;
+    color: #888;
+}
+
+.exercise-instructions {
+    margin: 5px 0 0 0;
+    font-size: 0.9rem;
+    color: #666;
+    line-height: 1.4;
+}
+
+/* Variaciones para diferentes tipos de ejercicios */
+.warmup-list .exercise-item {
+    border-left-color: #ff9800; /* Naranja para calentamiento */
+}
+
+.main-exercises-list .exercise-item {
+    border-left-color: #3498db; /* Azul para ejercicios principales */
+}
+
+.cooldown-list .exercise-item {
+    border-left-color: #2ecc71; /* Verde para enfriamiento */
+}
+
+/* Consejos nutricionales */
+.nutrition-tips {
+    background-color: #e8f5e9;
+    border-radius: 6px;
+    padding: 15px;
+}
+
+.nutrition-tips h3 {
+    color: #2e7d32;
+}
+
+.nutrition-tips p {
+    margin: 0;
+    color: #3e4a3d;
+    line-height: 1.5;
+}
+
+/* Botones de acción */
+.workout-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* Pantalla de entrenamiento activo */
+.active-workout-container {
+    padding: 15px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.active-workout-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.active-workout-header h2 {
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+.workout-timer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#workout-timer-display {
+    font-size: 1.5rem;
+    font-weight: 600;
+    font-family: monospace;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--primary-color);
+    color: white;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+/* Barra de progreso */
+.workout-progress {
+    margin-bottom: 20px;
+}
+
+.progress-bar {
+    height: 8px;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: var(--primary-color);
+    width: 0;
+    transition: width 0.3s ease;
+}
+
+.progress-stats {
+    display: flex;
+    justify-content: space-between;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* Lista de ejercicios activos */
+.active-exercise-list {
+    margin-bottom: 20px;
+}
+
+.exercises-container {
+    margin-left: 15px;
+}
+
+.active-exercise-item {
+    display: flex;
+    margin-bottom: 15px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.active-exercise-item.current {
+    opacity: 1;
+}
+
+.active-exercise-item.completed {
+    opacity: 0.8;
+}
+
+.exercise-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-right: 15px;
+}
+
+.indicator-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background-color: #ddd;
+    z-index: 2;
+}
+
+.active-exercise-item.current .indicator-dot {
+    background-color: var(--primary-color);
+}
+
+.active-exercise-item.completed .indicator-dot {
+    background-color: #4CAF50;
+}
+
+.indicator-line {
+    width: 2px;
+    flex-grow: 1;
+    background-color: #ddd;
+    margin-top: 5px;
+}
+
+.indicator-line.hidden {
+    display: none;
+}
+
+.exercise-content {
+    flex: 1;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 5px;
+}
+
+.exercise-content h4 {
+    margin: 0 0 5px 0;
+    font-size: 1rem;
+}
+
+.exercise-detail {
+    margin: 0 0 8px 0;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.exercise-controls {
+    margin-top: 12px;
+}
+
+/* Botones de control del workout */
+.workout-controls {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+/* Mensaje de finalización */
+.workout-completion-message {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: center;
+    margin-top: 20px;
+}
+
+.completion-icon {
+    font-size: 3rem;
+    color: #4CAF50;
+    margin-bottom: 10px;
+}
+
+.workout-completion-message h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.workout-completion-message p {
+    margin: 0 0 20px 0;
+    color: #666;
+}
+
+/* Pantalla de resumen */
+.workout-summary-container {
+    padding: 15px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.summary-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.summary-header i {
+    font-size: 3rem;
+    color: #4CAF50;
+    margin-bottom: 10px;
+}
+
+.summary-header h2 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.summary-header p {
+    margin: 0;
+    color: #666;
+}
+
+.summary-stats {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 30px;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    color: #666;
+}
+
+.summary-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+/* Pantalla de carga */
+.loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.loading-screen.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.loading-container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: center;
+    max-width: 80%;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(var(--primary-rgb), 0.2);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    margin: 0 auto 15px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+#loading-message {
+    margin: 0;
+    color: #666;
+}
+
+/* Modal de error */
+.error-modal .modal-header {
+    background-color: #f44336;
+    color: white;
+}
+
+.error-modal .modal-close-btn {
+    color: white;
+}
+
+.error-icon {
+    font-size: 3rem;
+    color: #f44336;
+    text-align: center;
+    margin: 15px 0;
+}
+
+/* Modal de configuración de API */
+.info-text {
+    background-color: #e3f2fd;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: #0d47a1;
+    margin-top: 15px;
+}
+
+.info-text i {
+    margin-right: 5px;
+}
+
+.info-text a {
+    color: #1976d2;
+    text-decoration: none;
+}
+
+.info-text a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .workout-meta {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .workout-actions {
+        flex-direction: column;
+    }
+    
+    .summary-stats {
+        flex-direction: column;
+        gap: 20px;
+    }
+} 
