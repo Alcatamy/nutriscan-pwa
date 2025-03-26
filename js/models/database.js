@@ -1,588 +1,210 @@
-// Base de datos para NutriScan
-// Este módulo maneja todas las operaciones de base de datos para la aplicación
-
-class NutriScanDB {
+// Módulo para gestionar la base de datos local utilizando localStorage
+class LocalDatabase {
     constructor() {
-        this.dbName = 'nutriscan-db';
-        this.dbVersion = 1;
-        this.db = null;
+        this.storagePrefix = 'nutriScan_';
+        this.collections = {
+            preferences: 'preferences',
+            foodLog: 'foodLog',
+            scannedFoods: 'scannedFoods',
+            configurations: 'configurations',
+            workouts: 'customWorkouts'
+        };
     }
-
+    
     // Inicializar la base de datos
     async init() {
         try {
-            this.db = await this.openDatabase();
-            console.log('Base de datos inicializada correctamente');
+            console.log('Inicializando base de datos local');
+            
+            // Verificar si localStorage está disponible
+            if (!this.isLocalStorageAvailable()) {
+                throw new Error('localStorage no está disponible');
+            }
+            
             return this;
         } catch (error) {
-            console.error('Error al inicializar la base de datos:', error);
-            throw error;
+            console.error('Error al inicializar base de datos local:', error);
+            return this;
         }
     }
-
-    // Abrir la conexión a la base de datos
-    openDatabase() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName, this.dbVersion);
-
-            // Crear o actualizar la estructura de la base de datos
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                
-                // Crear almacén para alimentos escaneados
-                if (!db.objectStoreNames.contains('scanned_foods')) {
-                    const scannedFoodsStore = db.createObjectStore('scanned_foods', { keyPath: 'id', autoIncrement: true });
-                    scannedFoodsStore.createIndex('timestamp', 'timestamp', { unique: false });
-                    scannedFoodsStore.createIndex('date', 'date', { unique: false });
-                }
-                
-                // Crear almacén para registro diario de alimentos
-                if (!db.objectStoreNames.contains('daily_logs')) {
-                    const dailyLogsStore = db.createObjectStore('daily_logs', { keyPath: 'date' });
-                }
-                
-                // Crear almacén para productos escaneados por código de barras
-                if (!db.objectStoreNames.contains('barcode_products')) {
-                    const barcodeProductsStore = db.createObjectStore('barcode_products', { keyPath: 'barcode' });
-                    barcodeProductsStore.createIndex('name', 'name', { unique: false });
-                }
-                
-                // Crear almacén para preferencias de usuario
-                if (!db.objectStoreNames.contains('user_preferences')) {
-                    db.createObjectStore('user_preferences', { keyPath: 'id' });
-                }
-                
-                // Crear almacén para información nutricional detallada
-                if (!db.objectStoreNames.contains('nutrition_data')) {
-                    db.createObjectStore('nutrition_data', { keyPath: 'foodId' });
-                }
-                
-                // Crear almacén para información de alérgenos
-                if (!db.objectStoreNames.contains('allergens')) {
-                    db.createObjectStore('allergens', { keyPath: 'foodId' });
-                }
-                
-                // Crear almacén para entrenamientos personalizados
-                if (!db.objectStoreNames.contains('custom_workouts')) {
-                    const workoutsStore = db.createObjectStore('custom_workouts', { keyPath: 'id' });
-                    workoutsStore.createIndex('type', 'type', { unique: false });
-                    workoutsStore.createIndex('level', 'level', { unique: false });
-                }
-                
-                // Crear almacén para historial de entrenamientos
-                if (!db.objectStoreNames.contains('workout_history')) {
-                    const historyStore = db.createObjectStore('workout_history', { keyPath: 'id', autoIncrement: true });
-                    historyStore.createIndex('date', 'date', { unique: false });
-                    historyStore.createIndex('workoutId', 'workoutId', { unique: false });
-                }
-            };
-
-            request.onsuccess = (event) => {
-                const db = event.target.result;
-                resolve(db);
-            };
-
-            request.onerror = (event) => {
-                console.error('Error al abrir la base de datos:', event.target.error);
-                reject(event.target.error);
-            };
-        });
-    }
-
-    // Guardar un alimento escaneado en el historial
-    async saveScannedFood(foodData) {
+    
+    // Verificar si localStorage está disponible
+    isLocalStorageAvailable() {
         try {
-            const today = new Date();
-            const timestamp = today.getTime();
-            const date = today.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-            
-            const transaction = this.db.transaction(['scanned_foods'], 'readwrite');
-            const store = transaction.objectStore('scanned_foods');
-            
-            const entry = {
-                foodData,
-                timestamp,
-                date
-            };
-            
-            await this.performTransaction(store, 'add', entry);
-            console.log('Alimento guardado en el historial');
+            const test = 'test';
+            localStorage.setItem(test, test);
+            localStorage.removeItem(test);
             return true;
-        } catch (error) {
-            console.error('Error al guardar alimento escaneado:', error);
+        } catch (e) {
             return false;
         }
     }
-
-    // Añadir un alimento al registro diario de calorías
-    async addToDailyLog(food, meal, date = null) {
+    
+    // Guardar datos en una colección
+    async saveToCollection(collection, id, data) {
         try {
-            // Si no se proporciona fecha, usar la fecha actual
-            const logDate = date || new Date().toISOString().split('T')[0];
-            
-            const transaction = this.db.transaction(['daily_logs'], 'readwrite');
-            const store = transaction.objectStore('daily_logs');
-            
-            // Intentar obtener el registro existente para la fecha dada
-            let dailyLog = await this.performTransaction(store, 'get', logDate);
-            
-            if (!dailyLog) {
-                // Si no existe registro para esta fecha, crear uno nuevo
-                dailyLog = {
-                    date: logDate,
-                    meals: {},
-                    totalCalories: 0,
-                    macros: {
-                        protein: 0,
-                        carbs: 0,
-                        fat: 0,
-                        fiber: 0
-                    }
-                };
+            if (!this.collections[collection]) {
+                throw new Error(`Colección no válida: ${collection}`);
             }
             
-            // Asegurarse de que la estructura de comidas existe
-            if (!dailyLog.meals[meal]) {
-                dailyLog.meals[meal] = [];
-            }
+            // Obtener los datos actuales de la colección
+            const collectionData = this.getCollectionData(collection);
             
-            // Generar ID único para la entrada
-            const entryId = `${logDate}-${meal}-${Date.now()}`;
+            // Actualizar o añadir el documento
+            collectionData[id] = {
+                ...data,
+                updatedAt: new Date().toISOString()
+            };
             
-            // Añadir alimento a la comida correspondiente
-            dailyLog.meals[meal].push({
-                id: entryId,
-                food,
-                timestamp: Date.now()
-            });
+            // Guardar en localStorage
+            this.saveCollectionData(collection, collectionData);
             
-            // Actualizar calorías totales y macronutrientes
-            dailyLog.totalCalories += food.nutrients?.energy || 0;
-            
-            dailyLog.macros.protein += food.nutrients?.protein || 0;
-            dailyLog.macros.carbs += food.nutrients?.carbohydrates || 0;
-            dailyLog.macros.fat += food.nutrients?.fat || 0;
-            dailyLog.macros.fiber += food.nutrients?.fiber || 0;
-            
-            // Guardar el registro actualizado
-            await this.performTransaction(store, 'put', dailyLog);
-            
-            console.log(`Alimento añadido a ${meal} para ${logDate}`);
-            return entryId;
-        } catch (error) {
-            console.error('Error al añadir alimento al registro diario:', error);
-            return null;
-        }
-    }
-
-    // Obtener el registro diario para una fecha específica
-    async getDailyLog(date) {
-        try {
-            const transaction = this.db.transaction(['daily_logs'], 'readonly');
-            const store = transaction.objectStore('daily_logs');
-            
-            return await this.performTransaction(store, 'get', date);
-        } catch (error) {
-            console.error(`Error al obtener registro diario para ${date}:`, error);
-            return null;
-        }
-    }
-
-    // Guardar un producto escaneado por código de barras
-    async saveBarcodeProduct(product) {
-        try {
-            if (!product.barcode) {
-                throw new Error('El producto debe tener un código de barras');
-            }
-            
-            const transaction = this.db.transaction(['barcode_products'], 'readwrite');
-            const store = transaction.objectStore('barcode_products');
-            
-            await this.performTransaction(store, 'put', product);
-            console.log(`Producto guardado: ${product.name} (${product.barcode})`);
             return true;
         } catch (error) {
-            console.error('Error al guardar producto por código de barras:', error);
+            console.error(`Error al guardar en ${collection}:`, error);
             return false;
         }
     }
-
-    // Obtener un producto por su código de barras
-    async getProductByBarcode(barcode) {
+    
+    // Obtener datos de una colección
+    async getFromCollection(collection, id) {
         try {
-            const transaction = this.db.transaction(['barcode_products'], 'readonly');
-            const store = transaction.objectStore('barcode_products');
+            if (!this.collections[collection]) {
+                throw new Error(`Colección no válida: ${collection}`);
+            }
             
-            return await this.performTransaction(store, 'get', barcode);
+            // Obtener los datos de la colección
+            const collectionData = this.getCollectionData(collection);
+            
+            // Devolver el documento específico si existe
+            return collectionData[id] || null;
         } catch (error) {
-            console.error(`Error al obtener producto con código ${barcode}:`, error);
+            console.error(`Error al obtener de ${collection}:`, error);
             return null;
         }
     }
-
+    
+    // Eliminar datos de una colección
+    async deleteFromCollection(collection, id) {
+        try {
+            if (!this.collections[collection]) {
+                throw new Error(`Colección no válida: ${collection}`);
+            }
+            
+            // Obtener los datos actuales de la colección
+            const collectionData = this.getCollectionData(collection);
+            
+            // Eliminar el documento si existe
+            if (collectionData[id]) {
+                delete collectionData[id];
+                
+                // Guardar en localStorage
+                this.saveCollectionData(collection, collectionData);
+                return true;
+            }
+            
+            return false;
+        } catch (error) {
+            console.error(`Error al eliminar de ${collection}:`, error);
+            return false;
+        }
+    }
+    
     // Guardar preferencias de usuario
-    async saveUserPreferences(preferences) {
-        try {
-            const transaction = this.db.transaction(['user_preferences'], 'readwrite');
-            const store = transaction.objectStore('user_preferences');
-            
-            // Usar un ID fijo para las preferencias (solo un registro)
-            const preferencesEntry = {
-                id: 'user_preferences',
-                ...preferences
-            };
-            
-            await this.performTransaction(store, 'put', preferencesEntry);
-            console.log('Preferencias de usuario guardadas');
-            return true;
-        } catch (error) {
-            console.error('Error al guardar preferencias de usuario:', error);
-            return false;
-        }
+    async saveUserPreferences(userId, preferences) {
+        return this.saveToCollection(this.collections.preferences, userId, preferences);
     }
-
+    
     // Obtener preferencias de usuario
-    async getUserPreferences() {
-        try {
-            const transaction = this.db.transaction(['user_preferences'], 'readonly');
-            const store = transaction.objectStore('user_preferences');
-            
-            const preferences = await this.performTransaction(store, 'get', 'user_preferences');
-            
-            if (preferences) {
-                // Eliminar el ID interno antes de devolver las preferencias
-                const { id, ...prefsData } = preferences;
-                return prefsData;
-            }
-            
-            return null;
-        } catch (error) {
-            console.error('Error al obtener preferencias de usuario:', error);
-            return null;
-        }
-    }
-
-    // Guardar información nutricional detallada de un alimento
-    async saveNutritionData(foodId, nutritionData) {
-        try {
-            const transaction = this.db.transaction(['nutrition_data'], 'readwrite');
-            const store = transaction.objectStore('nutrition_data');
-            
-            const entry = {
-                foodId,
-                ...nutritionData,
-                lastUpdated: Date.now()
-            };
-            
-            await this.performTransaction(store, 'put', entry);
-            console.log(`Información nutricional guardada para ${foodId}`);
-            return true;
-        } catch (error) {
-            console.error(`Error al guardar información nutricional para ${foodId}:`, error);
-            return false;
-        }
-    }
-
-    // Obtener información nutricional detallada de un alimento
-    async getNutritionData(foodId) {
-        try {
-            const transaction = this.db.transaction(['nutrition_data'], 'readonly');
-            const store = transaction.objectStore('nutrition_data');
-            
-            return await this.performTransaction(store, 'get', foodId);
-        } catch (error) {
-            console.error(`Error al obtener información nutricional para ${foodId}:`, error);
-            return null;
-        }
-    }
-
-    // Guardar información de alérgenos para un alimento
-    async saveAllergenInfo(foodId, allergens) {
-        try {
-            const transaction = this.db.transaction(['allergens'], 'readwrite');
-            const store = transaction.objectStore('allergens');
-            
-            // Primero eliminar cualquier entrada existente
-            try {
-                await this.performTransaction(store, 'delete', foodId);
-            } catch (e) {
-                // Ignorar error si no existe
-            }
-            
-            const entry = {
-                foodId,
-                allergens,
-                lastUpdated: Date.now()
-            };
-            
-            await this.performTransaction(store, 'put', entry);
-            console.log(`Información de alérgenos guardada para ${foodId}`);
-            return true;
-        } catch (error) {
-            console.error(`Error al guardar información de alérgenos para ${foodId}:`, error);
-            return false;
-        }
-    }
-
-    // Obtener información de alérgenos para un alimento
-    async getAllergenInfo(foodId) {
-        try {
-            const transaction = this.db.transaction(['allergens'], 'readonly');
-            const store = transaction.objectStore('allergens');
-            
-            return await this.performTransaction(store, 'get', foodId);
-        } catch (error) {
-            console.error(`Error al obtener información de alérgenos para ${foodId}:`, error);
-            return null;
-        }
-    }
-
-    // Obtener historial de alimentos escaneados
-    async getScannedFoodHistory(limit = 50) {
-        try {
-            const transaction = this.db.transaction(['scanned_foods'], 'readonly');
-            const store = transaction.objectStore('scanned_foods');
-            const index = store.index('timestamp');
-            
-            const history = [];
-            let cursor = await this.performCursorRequest(index.openCursor(null, 'prev'));
-            
-            while (cursor && history.length < limit) {
-                history.push(cursor.value);
-                cursor = await this.performCursorRequest(cursor.continue());
-            }
-            
-            return history;
-        } catch (error) {
-            console.error('Error al obtener historial de alimentos:', error);
-            return [];
-        }
-    }
-
-    // Eliminar entrada del registro diario
-    async removeLogEntry(entryId) {
-        try {
-            if (!entryId) throw new Error('ID de entrada no válido');
-            
-            // Extraer fecha y tipo de comida del ID
-            const [date, meal] = entryId.split('-');
-            
-            if (!date || !meal) throw new Error('ID de entrada no válido');
-            
-            const transaction = this.db.transaction(['daily_logs'], 'readwrite');
-            const store = transaction.objectStore('daily_logs');
-            
-            // Obtener el registro diario
-            const dailyLog = await this.performTransaction(store, 'get', date);
-            
-            if (!dailyLog || !dailyLog.meals || !dailyLog.meals[meal]) {
-                throw new Error('Registro diario no encontrado');
-            }
-            
-            // Encontrar la entrada por ID
-            const entryIndex = dailyLog.meals[meal].findIndex(entry => entry.id === entryId);
-            
-            if (entryIndex === -1) {
-                throw new Error('Entrada no encontrada');
-            }
-            
-            // Restar calorías y macros
-            const entry = dailyLog.meals[meal][entryIndex];
-            dailyLog.totalCalories -= entry.food.nutrients?.energy || 0;
-            dailyLog.macros.protein -= entry.food.nutrients?.protein || 0;
-            dailyLog.macros.carbs -= entry.food.nutrients?.carbohydrates || 0;
-            dailyLog.macros.fat -= entry.food.nutrients?.fat || 0;
-            dailyLog.macros.fiber -= entry.food.nutrients?.fiber || 0;
-            
-            // Eliminar la entrada
-            dailyLog.meals[meal].splice(entryIndex, 1);
-            
-            // Guardar el registro actualizado
-            await this.performTransaction(store, 'put', dailyLog);
-            
-            console.log(`Entrada ${entryId} eliminada del registro diario`);
-            return true;
-        } catch (error) {
-            console.error('Error al eliminar entrada del registro diario:', error);
-            return false;
-        }
-    }
-
-    // Limpiar todos los datos (para depuración)
-    async clearAllData() {
-        try {
-            const storeNames = this.db.objectStoreNames;
-            const promises = [];
-            
-            for (const storeName of storeNames) {
-                const transaction = this.db.transaction([storeName], 'readwrite');
-                const store = transaction.objectStore(storeName);
-                promises.push(this.performTransaction(store, 'clear'));
-            }
-            
-            await Promise.all(promises);
-            console.log('Todos los datos han sido borrados');
-            return true;
-        } catch (error) {
-            console.error('Error al limpiar datos:', error);
-            return false;
-        }
-    }
-
-    // Realizar una transacción genérica
-    performTransaction(store, method, value = null) {
-        return new Promise((resolve, reject) => {
-            let request;
-            
-            if (method === 'add' || method === 'put') {
-                request = store[method](value);
-            } else if (method === 'delete' || method === 'get') {
-                request = store[method](value);
-            } else if (method === 'clear') {
-                request = store.clear();
-            } else if (method === 'getAll') {
-                request = store.getAll();
-            } else {
-                reject(new Error(`Método desconocido: ${method}`));
-                return;
-            }
-            
-            request.onsuccess = (event) => {
-                resolve(event.target.result);
-            };
-            
-            request.onerror = (event) => {
-                console.error(`Error en transacción ${method}:`, event.target.error);
-                reject(event.target.error);
-            };
-        });
-    }
-
-    // Realizar una petición de cursor
-    performCursorRequest(request) {
-        return new Promise((resolve, reject) => {
-            request.onsuccess = (event) => {
-                resolve(event.target.result);
-            };
-            
-            request.onerror = (event) => {
-                console.error('Error en petición de cursor:', event.target.error);
-                reject(event.target.error);
-            };
-        });
-    }
-
-    // Guardar un entrenamiento personalizado
-    async saveCustomWorkout(workout) {
-        try {
-            if (!workout.id) {
-                workout.id = `custom-${Date.now()}`;
-            }
-            
-            const transaction = this.db.transaction(['custom_workouts'], 'readwrite');
-            const store = transaction.objectStore('custom_workouts');
-            
-            await this.performTransaction(store, 'put', workout);
-            console.log(`Entrenamiento personalizado guardado: ${workout.name}`);
-            return workout.id;
-        } catch (error) {
-            console.error('Error al guardar entrenamiento personalizado:', error);
-            return null;
-        }
+    async getUserPreferences(userId) {
+        return this.getFromCollection(this.collections.preferences, userId);
     }
     
-    // Obtener todos los entrenamientos personalizados
-    async getCustomWorkouts() {
-        try {
-            const transaction = this.db.transaction(['custom_workouts'], 'readonly');
-            const store = transaction.objectStore('custom_workouts');
-            
-            return await this.performCursorRequest(store.openCursor());
-        } catch (error) {
-            console.error('Error al obtener entrenamientos personalizados:', error);
-            return [];
-        }
+    // Guardar registro de alimentos
+    async saveFoodLog(userId, date, log) {
+        const logId = `${userId}_${date}`;
+        return this.saveToCollection(this.collections.foodLog, logId, log);
     }
     
-    // Obtener entrenamiento personalizado por ID
-    async getCustomWorkoutById(id) {
-        try {
-            const transaction = this.db.transaction(['custom_workouts'], 'readonly');
-            const store = transaction.objectStore('custom_workouts');
-            
-            return await this.performTransaction(store, 'get', id);
-        } catch (error) {
-            console.error(`Error al obtener entrenamiento con ID ${id}:`, error);
-            return null;
-        }
+    // Obtener registro de alimentos
+    async getFoodLog(userId, date) {
+        const logId = `${userId}_${date}`;
+        return this.getFromCollection(this.collections.foodLog, logId);
     }
     
-    // Eliminar un entrenamiento personalizado
-    async deleteCustomWorkout(id) {
-        try {
-            const transaction = this.db.transaction(['custom_workouts'], 'readwrite');
-            const store = transaction.objectStore('custom_workouts');
-            
-            await this.performTransaction(store, 'delete', id);
-            console.log(`Entrenamiento ${id} eliminado`);
-            return true;
-        } catch (error) {
-            console.error(`Error al eliminar entrenamiento ${id}:`, error);
-            return false;
-        }
+    // Guardar alimento escaneado
+    async saveScannedFood(userId, foodId, foodData) {
+        const userFoodsId = `${userId}_foods`;
+        
+        // Obtener alimentos escaneados actuales
+        const scannedFoods = await this.getFromCollection(this.collections.scannedFoods, userFoodsId) || { foods: {} };
+        
+        // Añadir o actualizar el alimento
+        scannedFoods.foods[foodId] = {
+            ...foodData,
+            updatedAt: new Date().toISOString()
+        };
+        
+        return this.saveToCollection(this.collections.scannedFoods, userFoodsId, scannedFoods);
     }
     
-    // Registrar un entrenamiento completado en el historial
-    async logWorkout(workout, duration, calories) {
-        try {
-            const today = new Date();
-            const date = today.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-            
-            const transaction = this.db.transaction(['workout_history'], 'readwrite');
-            const store = transaction.objectStore('workout_history');
-            
-            const entry = {
-                date,
-                timestamp: today.getTime(),
-                workoutId: workout.id,
-                workoutName: workout.name,
-                workoutType: workout.type,
-                duration: duration || workout.duration,
-                calories: calories || workout.calories,
-                completed: true
-            };
-            
-            const id = await this.performTransaction(store, 'add', entry);
-            console.log(`Entrenamiento registrado: ${workout.name}`);
-            return id;
-        } catch (error) {
-            console.error('Error al registrar entrenamiento:', error);
-            return null;
-        }
+    // Obtener todos los alimentos escaneados de un usuario
+    async getAllScannedFoods(userId) {
+        const userFoodsId = `${userId}_foods`;
+        const scannedFoods = await this.getFromCollection(this.collections.scannedFoods, userFoodsId);
+        return scannedFoods ? scannedFoods.foods || {} : {};
     }
     
-    // Obtener historial de entrenamientos
-    async getWorkoutHistory(limit = 10) {
-        try {
-            const transaction = this.db.transaction(['workout_history'], 'readonly');
-            const store = transaction.objectStore('workout_history');
-            const index = store.index('date');
-            
-            // Obtener entradas ordenadas por fecha (más recientes primero)
-            const request = index.openCursor(null, 'prev');
-            const history = await this.performCursorRequest(request, limit);
-            
-            return history;
-        } catch (error) {
-            console.error('Error al obtener historial de entrenamientos:', error);
-            return [];
+    // Guardar rutina de entrenamiento personalizada
+    async saveCustomWorkout(userId, workoutId, workoutData) {
+        const userWorkoutsId = `${userId}_workouts`;
+        
+        // Obtener rutinas actuales
+        const customWorkouts = await this.getFromCollection(this.collections.workouts, userWorkoutsId) || { workouts: {} };
+        
+        // Añadir o actualizar la rutina
+        customWorkouts.workouts[workoutId] = {
+            ...workoutData,
+            updatedAt: new Date().toISOString()
+        };
+        
+        return this.saveToCollection(this.collections.workouts, userWorkoutsId, customWorkouts);
+    }
+    
+    // Obtener todas las rutinas personalizadas de un usuario
+    async getCustomWorkouts(userId) {
+        const userWorkoutsId = `${userId}_workouts`;
+        const customWorkouts = await this.getFromCollection(this.collections.workouts, userWorkoutsId);
+        
+        if (customWorkouts && customWorkouts.workouts) {
+            return Object.values(customWorkouts.workouts);
         }
+        
+        return [];
+    }
+    
+    // Guardar configuración
+    async saveConfiguration(configId, configData) {
+        return this.saveToCollection(this.collections.configurations, configId, configData);
+    }
+    
+    // Obtener configuración
+    async getConfiguration(configId) {
+        return this.getFromCollection(this.collections.configurations, configId);
+    }
+    
+    // Métodos auxiliares para manipular datos en localStorage
+    getCollectionData(collection) {
+        const storageKey = this.storagePrefix + collection;
+        const data = localStorage.getItem(storageKey);
+        return data ? JSON.parse(data) : {};
+    }
+    
+    saveCollectionData(collection, data) {
+        const storageKey = this.storagePrefix + collection;
+        localStorage.setItem(storageKey, JSON.stringify(data));
     }
 }
 
-// Exportar una instancia única para uso en toda la aplicación
-const nutriScanDB = new NutriScanDB();
-export default nutriScanDB;
-
-// Hacer accesible desde la consola para depuración
-window.nutriScanDB = nutriScanDB; 
+// Exportar como singleton
+export default new LocalDatabase(); 

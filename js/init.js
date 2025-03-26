@@ -1,8 +1,9 @@
 // Script de inicialización para NutriScan
-import authManager from './auth.js';
-import userPreferences from './models/user-preferences.js';
+import authManager from './local-auth.js';
+import userPreferences from './user-preferences.js';
 import workoutRecommendations from './models/workout-recommendations.js';
-import nutriScanDB from './models/database.js';
+import aiWorkoutRecommendations from './models/ai-workout-recommendations.js';
+import database from './models/database.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Iniciando aplicación NutriScan...');
@@ -34,16 +35,9 @@ async function initializeApp() {
     try {
         console.log('Inicializando módulos...');
         
-        // Verificar Firebase primero
-        if (!firebase.apps.length) {
-            console.error('Firebase no está inicializado correctamente');
-            showErrorScreen('Error al inicializar Firebase');
-            return;
-        }
-        
-        // Inicializar base de datos
+        // Inicializar base de datos local
         updateLoadingStatus('Configurando base de datos local...');
-        await nutriScanDB.init();
+        await database.init();
         
         // Inicializar preferencias de usuario
         updateLoadingStatus('Cargando preferencias...');
@@ -53,17 +47,16 @@ async function initializeApp() {
         updateLoadingStatus('Preparando sistema de recomendaciones...');
         await workoutRecommendations.init();
         
-        console.log('Módulos principales inicializados correctamente');
+        // Inicializar recomendaciones de entrenamiento con IA
+        await aiWorkoutRecommendations.init();
         
-        // Iniciar AuthManager después que las preferencias estén listas
-        updateLoadingStatus('Verificando autenticación...');
-        await authManager.init();
+        console.log('Módulos principales inicializados correctamente');
         
         // Configurar eventos de UI
         setupUIEvents();
         
-        // Configurar observer para cambios de autenticación
-        setupAuthStateObserver();
+        // Inicializar autenticación
+        await initializeAuth();
         
         // Verificar si hay un usuario autenticado
         // Después de la inicialización, mostrar siempre la pantalla de login primero
@@ -72,6 +65,42 @@ async function initializeApp() {
     } catch (error) {
         console.error('Error en la inicialización:', error);
         showErrorScreen('Error durante la inicialización: ' + error.message);
+    }
+}
+
+// Inicializar autenticación
+async function initializeAuth() {
+    try {
+        // Inicializar el administrador de autenticación
+        await authManager.init();
+        console.log('Autenticación inicializada');
+        
+        // Configurar eventos para la autenticación
+        setupAuthEvents();
+        
+        // Comprobar si hay un usuario ya autenticado
+        const isAuthenticated = authManager.isAuthenticated();
+        
+        if (isAuthenticated) {
+            // Si ya hay sesión, mostrar pantalla principal
+            showHomeScreen();
+            
+            // Comprobar si el usuario tiene un objetivo de fitness configurado
+            const user = authManager.getCurrentUser();
+            const userPrefs = await userPreferences.getUserPreferences(user.uid);
+            
+            if (!userPrefs || !userPrefs.fitnessGoal) {
+                // Si no tiene objetivo configurado, mostrar modal de selección
+                showFitnessGoalModal();
+            }
+            
+            // Actualizar el dashboard con los datos del usuario
+            updateDashboard();
+        }
+        
+    } catch (error) {
+        console.error('Error al inicializar autenticación:', error);
+        showErrorScreen('Error de autenticación', error.message);
     }
 }
 
@@ -86,7 +115,6 @@ function setupUIEvents() {
     const modalOverlay = document.getElementById('modal-overlay');
     
     // Autenticación
-    const googleLoginBtn = document.getElementById('google-login-btn');
     const emailLoginToggle = document.getElementById('email-login-toggle');
     const guestLoginBtn = document.getElementById('guest-login-btn');
     const loginSubmitBtn = document.getElementById('login-submit-btn');
@@ -165,25 +193,6 @@ function setupUIEvents() {
     }
     
     // === EVENTOS DE AUTENTICACIÓN ===
-    // Login con Google
-    if (googleLoginBtn) {
-        googleLoginBtn.addEventListener('click', async () => {
-            try {
-                showLoading(true);
-                const result = await authManager.loginWithGoogle();
-                showLoading(false);
-                
-                if (!result.success) {
-                    showNotification(result.error);
-                }
-            } catch (error) {
-                showLoading(false);
-                showNotification('Error al iniciar sesión con Google');
-                console.error(error);
-            }
-        });
-    }
-    
     // Mostrar formulario de login con email
     if (emailLoginToggle) {
         emailLoginToggle.addEventListener('click', () => {
@@ -258,17 +267,17 @@ function setupUIEvents() {
     // Submit registro
     if (registerSubmitBtn) {
         registerSubmitBtn.addEventListener('click', async () => {
-            const name = document.getElementById('register-name').value;
             const email = document.getElementById('register-email').value;
             const password = document.getElementById('register-password').value;
-            const confirmPassword = document.getElementById('register-confirm-password').value;
+            const passwordConfirm = document.getElementById('register-password-confirm').value;
+            const name = document.getElementById('register-name').value;
             
-            if (!name || !email || !password || !confirmPassword) {
+            if (!email || !password || !passwordConfirm || !name) {
                 showNotification('Por favor, completa todos los campos');
                 return;
             }
             
-            if (password !== confirmPassword) {
+            if (password !== passwordConfirm) {
                 showNotification('Las contraseñas no coinciden');
                 return;
             }
@@ -280,8 +289,6 @@ function setupUIEvents() {
                 
                 if (!result.success) {
                     showNotification(result.error);
-                } else {
-                    showNotification('¡Registro exitoso! Iniciando sesión...');
                 }
             } catch (error) {
                 showLoading(false);
@@ -291,294 +298,500 @@ function setupUIEvents() {
         });
     }
     
-    // Olvidé mi contraseña
-    if (forgotPasswordLink) {
-        forgotPasswordLink.addEventListener('click', async () => {
-            const email = document.getElementById('login-email').value;
-            
-            if (!email) {
-                showNotification('Por favor, introduce tu email para restablecer contraseña');
-                return;
-            }
-            
-            try {
-                showLoading(true);
-                const result = await authManager.resetPassword(email);
-                showLoading(false);
-                
-                if (result.success) {
-                    showNotification('Se ha enviado un email para restablecer tu contraseña');
-                } else {
-                    showNotification(result.error);
-                }
-            } catch (error) {
-                showLoading(false);
-                showNotification('Error al enviar email de restablecimiento');
-                console.error(error);
-            }
-        });
-    }
-    
     // Cerrar sesión
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
             try {
-                const result = await authManager.logout();
-                
-                if (!result.success) {
-                    showNotification(result.error);
-                }
+                showLoading(true);
+                await authManager.logout();
+                showLoading(false);
             } catch (error) {
-                showNotification('Error al cerrar sesión');
-                console.error(error);
+                showLoading(false);
+                console.error('Error al cerrar sesión:', error);
             }
         });
     }
     
-    // === EVENTOS DE FITNESS ===
+    // === EVENTOS DE PREFERENCIAS Y OBJETIVOS ===
     // Cambiar objetivo fitness
     if (changeGoalBtn) {
         changeGoalBtn.addEventListener('click', () => {
+            // Actualizar el modal con los objetivos actuales
+            const fitnessGoals = userPreferences.getFitnessGoals();
+            
+            // Quitar selección previa
+            goalOptions.forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // Seleccionar el objetivo actual
+            if (fitnessGoals.primaryGoal) {
+                const currentOption = document.querySelector(`.goal-option[data-goal="${fitnessGoals.primaryGoal}"]`);
+                if (currentOption) {
+                    currentOption.classList.add('selected');
+                }
+            }
+            
+            // Mostrar modal
             toggleModal('fitness-goal-modal', true);
         });
     }
     
-    // Seleccionar objetivo fitness
+    // Selección de objetivo fitness
     goalOptions.forEach(option => {
         option.addEventListener('click', () => {
-            // Deseleccionar todas las opciones
+            // Quitar selección previa
             goalOptions.forEach(opt => opt.classList.remove('selected'));
             
-            // Seleccionar la opción actual
+            // Seleccionar el objetivo clicado
             option.classList.add('selected');
-            
-            // Guardar la selección
-            window.selectedGoal = option.getAttribute('data-goal');
         });
     });
     
     // Guardar objetivo fitness
     if (goalSaveBtn) {
-        goalSaveBtn.addEventListener('click', saveSelectedGoal);
+        goalSaveBtn.addEventListener('click', async () => {
+            await saveSelectedGoal();
+        });
     }
     
     // Cancelar selección de objetivo
     if (goalCancelBtn) {
         goalCancelBtn.addEventListener('click', () => {
             toggleModal('fitness-goal-modal', false);
-            // Si es la primera vez que se muestra el modal y el usuario cancela,
-            // mostrar la pantalla de inicio de todos modos
-            showScreen('home-screen');
-            updateDashboard();
         });
     }
     
-    // Cerrar modales
+    // Botón para cerrar modal
     if (modalCloseBtn) {
         modalCloseBtn.addEventListener('click', () => {
-            // Cerrar todos los modales
-            document.querySelectorAll('.modal').forEach(modal => {
+            const modal = modalCloseBtn.closest('.modal');
+            if (modal) {
                 modal.classList.remove('active');
-            });
-            modalOverlay.classList.remove('active');
-            
-            // Si es la primera vez que se muestra el modal y el usuario lo cierra,
-            // mostrar la pantalla de inicio de todos modos
-            showScreen('home-screen');
-            updateDashboard();
+                document.getElementById('modal-overlay').classList.remove('active');
+            }
         });
     }
     
-    // === EVENTOS DE DASHBOARD ===
-    // Acciones rápidas
+    // === EVENTOS DEL DASHBOARD ===
+    // Botón de escaneo rápido
     if (quickScanBtn) {
         quickScanBtn.addEventListener('click', () => {
-            showScreen('scanner-screen');
+            showScreen('camera-screen');
         });
     }
     
+    // Botón de registro rápido
     if (quickLogBtn) {
         quickLogBtn.addEventListener('click', () => {
             showScreen('food-log-screen');
         });
     }
     
+    // Botón de entrenamiento rápido
     if (quickWorkoutBtn) {
         quickWorkoutBtn.addEventListener('click', () => {
-            showScreen('workout-screen');
+            showScreen('workouts-screen');
         });
     }
     
+    // Botón de agua rápido
     if (quickWaterBtn) {
-        quickWaterBtn.addEventListener('click', async () => {
-            try {
-                // Incremento de agua en ml (por defecto 250ml)
-                const waterIncrement = 250;
-                
-                // Obtener preferencias para límite diario
-                const nutritionGoals = userPreferences.getNutritionGoals();
-                const waterGoal = nutritionGoals?.waterIntake || 2000; // ml por defecto
-                
-                // Actualizar en preferencias (simular por ahora)
-                // TODO: Implementar registro real de agua
-                
-                // Actualizar UI (usando datos ficticios por ahora)
-                const currentWater = parseInt(document.getElementById('today-water').textContent.split('/')[0]) || 0;
-                const newWater = Math.min(currentWater + waterIncrement, waterGoal);
-                
-                // Actualizar barra de progreso
-                updateWaterProgress(newWater, waterGoal);
-                
-                showNotification(`¡Añadidos ${waterIncrement}ml de agua!`);
-            } catch (error) {
-                console.error('Error al registrar agua:', error);
-                showNotification('Error al registrar agua');
-            }
-        });
-    }
-    
-    if (startWorkoutBtn) {
-        startWorkoutBtn.addEventListener('click', () => {
-            showScreen('workout-screen');
+        quickWaterBtn.addEventListener('click', () => {
+            // Implementar lógica para añadir agua
+            showNotification('Vaso de agua registrado');
         });
     }
 }
 
-// Observer para cambios de estado de autenticación
-function setupAuthStateObserver() {
-    firebase.auth().onAuthStateChanged(async (user) => {
-        if (user) {
-            console.log('Auth state changed: Usuario autenticado', user.displayName || user.email);
-            await handleUserSignIn(user);
-        } else {
-            console.log('Auth state changed: No hay usuario autenticado');
-            // Mostrar pantalla de login
-            showScreen('login-screen');
+// Configurar eventos de autenticación
+function setupAuthEvents() {
+    // Botón de iniciar sesión
+    document.getElementById('login-btn').addEventListener('click', async (e) => {
+        e.preventDefault();
+        
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        
+        if (!email || !password) {
+            showNotification('Por favor, introduce correo y contraseña', 'is-danger');
+            return;
+        }
+        
+        try {
+            showLoadingScreen(true, 'Iniciando sesión...');
+            
+            await authManager.loginWithEmailAndPassword(email, password);
+            
+            showLoadingScreen(false);
+            showHomeScreen();
+            updateDashboard();
+            
+        } catch (error) {
+            showLoadingScreen(false);
+            showNotification('Error al iniciar sesión: ' + error.message, 'is-danger');
+        }
+    });
+    
+    // Botón de registro
+    document.getElementById('register-btn').addEventListener('click', async (e) => {
+        e.preventDefault();
+        
+        const name = document.getElementById('register-name').value;
+        const email = document.getElementById('register-email').value;
+        const password = document.getElementById('register-password').value;
+        
+        if (!name || !email || !password) {
+            showNotification('Por favor, completa todos los campos', 'is-danger');
+            return;
+        }
+        
+        try {
+            showLoadingScreen(true, 'Creando cuenta...');
+            
+            const user = await authManager.registerUser(email, password, name);
+            
+            // Mostrar modal de selección de objetivo fitness para nuevos usuarios
+            showFitnessGoalModal();
+            
+            showLoadingScreen(false);
+            
+        } catch (error) {
+            showLoadingScreen(false);
+            showNotification('Error al registrarse: ' + error.message, 'is-danger');
+        }
+    });
+    
+    // Botón de acceso como invitado
+    document.getElementById('guest-login-btn').addEventListener('click', async () => {
+        try {
+            showLoadingScreen(true, 'Accediendo como invitado...');
+            
+            await authManager.loginAsGuest();
+            
+            // Mostrar modal de selección de objetivo fitness para invitados
+            showFitnessGoalModal();
+            
+            showLoadingScreen(false);
+            
+        } catch (error) {
+            showLoadingScreen(false);
+            showNotification('Error al acceder como invitado: ' + error.message, 'is-danger');
+        }
+    });
+    
+    // Botón para alternar entre inicio de sesión y registro
+    document.getElementById('toggle-register').addEventListener('click', () => {
+        document.getElementById('login-form').classList.add('is-hidden');
+        document.getElementById('register-form').classList.remove('is-hidden');
+    });
+    
+    document.getElementById('toggle-login').addEventListener('click', () => {
+        document.getElementById('register-form').classList.add('is-hidden');
+        document.getElementById('login-form').classList.remove('is-hidden');
+    });
+    
+    // Botón de cerrar sesión
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+        try {
+            await authManager.logout();
+            showLoginScreen();
+        } catch (error) {
+            showNotification('Error al cerrar sesión: ' + error.message, 'is-danger');
         }
     });
 }
 
-// Variable para controlar si es la primera vez que se inicia sesión
-let isFirstLogin = true;
-
-// Manejar inicio de sesión
-async function handleUserSignIn(user) {
-    console.log('Manejando inicio de sesión para:', user.displayName || user.email);
+// Mostrar pantalla de inicio de sesión
+function showLoginScreen() {
+    // Ocultar todas las secciones
+    document.querySelectorAll('section.section').forEach(section => {
+        section.classList.add('is-hidden');
+    });
     
+    // Mostrar sección de login
+    document.getElementById('login-section').classList.remove('is-hidden');
+    
+    // Restablecer campos de formulario
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-password').value = '';
+    document.getElementById('register-name').value = '';
+    document.getElementById('register-email').value = '';
+    document.getElementById('register-password').value = '';
+    
+    // Asegurarse de que el formulario de login es visible (no el de registro)
+    document.getElementById('login-form').classList.remove('is-hidden');
+    document.getElementById('register-form').classList.add('is-hidden');
+}
+
+// Mostrar pantalla principal
+function showHomeScreen() {
+    // Ocultar todas las secciones
+    document.querySelectorAll('section.section').forEach(section => {
+        section.classList.add('is-hidden');
+    });
+    
+    // Mostrar sección principal
+    document.getElementById('main-section').classList.remove('is-hidden');
+    
+    // Actualizar información del usuario
+    updateUserInfo();
+}
+
+// Mostrar modal de selección de objetivo fitness
+function showFitnessGoalModal() {
+    document.getElementById('fitness-goal-modal').classList.add('is-active');
+}
+
+// Actualizar dashboard con datos del usuario
+async function updateDashboard() {
     try {
-        // Mostrar pantalla de carga mientras se procesan los datos
-        showScreen('loading-screen');
-        updateLoadingStatus('Cargando perfil...');
+        const user = authManager.getCurrentUser();
+        if (!user) return;
         
-        // Asegurar que las preferencias están inicializadas
-        if (!userPreferences.preferences) {
-            await userPreferences.init();
+        // Obtener preferencias del usuario
+        const userPrefs = await userPreferences.getUserPreferences(user.uid);
+        
+        if (userPrefs) {
+            // Actualizar indicador de objetivo fitness en el dashboard
+            const fitnessGoalElement = document.getElementById('current-fitness-goal');
+            if (fitnessGoalElement) {
+                let goalText = 'No establecido';
+                
+                switch (userPrefs.fitnessGoal) {
+                    case 'lose-weight':
+                        goalText = 'Perder peso';
+                        break;
+                    case 'gain-muscle':
+                        goalText = 'Ganar músculo';
+                        break;
+                    case 'maintain':
+                        goalText = 'Mantener peso';
+                        break;
+                    case 'improve-health':
+                        goalText = 'Mejorar salud';
+                        break;
+                    case 'athletic-performance':
+                        goalText = 'Rendimiento deportivo';
+                        break;
+                }
+                
+                fitnessGoalElement.textContent = goalText;
+            }
+            
+            // Actualizar más elementos del dashboard según sea necesario...
         }
         
-        // Actualizar UI con datos del usuario
-        const userNameDisplay = document.getElementById('user-name-display');
-        const userAvatar = document.getElementById('user-avatar');
-        const menuUserAvatar = document.getElementById('menu-user-avatar');
-        const menuUserName = document.getElementById('menu-user-name');
-        const menuUserEmail = document.getElementById('menu-user-email');
-        
-        if (userNameDisplay) {
-            userNameDisplay.textContent = user.displayName || 'Usuario';
-        }
-        
-        if (userAvatar && user.photoURL) {
-            userAvatar.src = user.photoURL;
-        }
-        
-        if (menuUserAvatar && user.photoURL) {
-            menuUserAvatar.src = user.photoURL;
-        }
-        
-        if (menuUserName) {
-            menuUserName.textContent = user.displayName || 'Usuario';
-        }
-        
-        if (menuUserEmail) {
-            menuUserEmail.textContent = user.email || '';
-        }
-        
-        // Verificar si el usuario tiene objetivos fitness configurados
-        const fitnessGoals = userPreferences.getFitnessGoals();
-        console.log('Objetivos fitness actuales:', fitnessGoals);
-        
-        // Primero ir siempre a la pantalla home
-        showScreen('home-screen');
-        
-        // Cargar el dashboard con datos disponibles
-        await updateDashboard();
-        
-        // Verificar si debe mostrarse el modal de selección de objetivo
-        if (!fitnessGoals.primaryGoal && isFirstLogin) {
-            console.log('El usuario no tiene objetivo fitness, mostrando modal de selección');
-            // Mostrar modal de selección después de que se haya cargado la pantalla principal
-            setTimeout(() => {
-                toggleModal('fitness-goal-modal', true);
-            }, 500);
-        }
-        
-        // Marcar que ya no es el primer inicio de sesión
-        isFirstLogin = false;
     } catch (error) {
-        console.error('Error al manejar inicio de sesión:', error);
-        showNotification('Error al cargar los datos de usuario');
-        // En caso de error, mostrar la pantalla principal de todos modos
-        showScreen('home-screen');
+        console.error('Error al actualizar dashboard:', error);
     }
 }
 
-// Guardar objetivo fitness seleccionado
-async function saveSelectedGoal() {
-    if (!window.selectedGoal) {
-        showNotification('Por favor, selecciona un objetivo de fitness');
-        return;
+// Actualizar información del usuario en la UI
+function updateUserInfo() {
+    const user = authManager.getCurrentUser();
+    if (!user) return;
+    
+    // Actualizar nombre de usuario en la navegación
+    const userNameElement = document.getElementById('current-user-name');
+    if (userNameElement) {
+        userNameElement.textContent = user.displayName || 'Usuario';
     }
     
-    console.log('Guardando objetivo fitness:', window.selectedGoal);
-    showLoading(true);
+    // Más actualizaciones de la UI basadas en el usuario...
+}
+
+// Mostrar pantalla de carga
+function showLoadingScreen(show, message = 'Cargando...') {
+    const loadingScreen = document.getElementById('loading-screen');
+    const loadingMessage = document.getElementById('loading-message');
     
-    try {
-        // Guardar el objetivo en preferencias
-        await userPreferences.updateFitnessGoals({
-            primaryGoal: window.selectedGoal,
-            // Valores por defecto para otros parámetros
-            fitnessLevel: 'beginner',
-            workoutFrequency: 3,
-            targetWeight: null,
-            weeklyWeightChange: 0.5,
-            activityCalories: 300,
-            preferredWorkouts: ['cardio', 'strength']
-        });
+    if (loadingMessage) {
+        loadingMessage.textContent = message;
+    }
+    
+    if (show) {
+        loadingScreen.classList.remove('is-hidden');
+    } else {
+        loadingScreen.classList.add('is-hidden');
+    }
+}
+
+// Mostrar pantalla de error
+function showErrorScreen(title, message) {
+    const errorScreen = document.getElementById('error-screen');
+    const errorTitle = document.getElementById('error-title');
+    const errorMessage = document.getElementById('error-message');
+    
+    if (errorTitle) errorTitle.textContent = title;
+    if (errorMessage) errorMessage.textContent = message;
+    
+    // Ocultar carga y mostrar error
+    showLoadingScreen(false);
+    errorScreen.classList.remove('is-hidden');
+}
+
+// Mostrar notificación
+function showNotification(message, type = 'is-info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+        <button class="delete"></button>
+        ${message}
+    `;
+    
+    // Añadir al contenedor de notificaciones
+    const container = document.getElementById('notification-container');
+    if (container) {
+        container.appendChild(notification);
         
-        // Mostrar el objetivo seleccionado en la pantalla de fitness
-        const currentFitnessGoal = document.getElementById('current-fitness-goal');
-        if (currentFitnessGoal) {
-            currentFitnessGoal.textContent = getGoalDisplayName(window.selectedGoal);
+        // Configurar botón para cerrar notificación
+        const closeBtn = notification.querySelector('.delete');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                notification.remove();
+            });
         }
         
-        // Actualizar dashboard con las recomendaciones
-        await updateDashboard();
+        // Auto eliminar después de 5 segundos
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    }
+}
+
+// Mostrar/ocultar pantalla de carga
+function showLoading(show = true) {
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) {
+        if (show) {
+            loadingScreen.classList.add('active');
+        } else {
+            loadingScreen.classList.remove('active');
+        }
+    }
+}
+
+// Cambiar de pantalla
+function showScreen(screenId) {
+    // Ocultar todas las pantallas
+    const screens = document.querySelectorAll('.app-screen');
+    screens.forEach(screen => {
+        screen.classList.remove('active');
+    });
+    
+    // Mostrar la pantalla solicitada
+    const targetScreen = document.getElementById(screenId);
+    if (targetScreen) {
+        targetScreen.classList.add('active');
+        
+        // Acciones específicas según la pantalla
+        if (screenId === 'camera-screen') {
+            // Iniciar la cámara cuando se muestra la pantalla
+            if (window.initCamera) {
+                window.initCamera();
+            }
+        } else if (screenId === 'food-log-screen') {
+            // Actualizar el registro de alimentos cuando se muestra la pantalla
+            if (window.updateFoodLog) {
+                window.updateFoodLog();
+            }
+        }
+    } else {
+        console.error(`Pantalla no encontrada: ${screenId}`);
+    }
+    
+    // Actualizar botones de navegación móvil
+    const navButtons = document.querySelectorAll('.nav-btn');
+    navButtons.forEach(btn => {
+        const targetScreenId = btn.getAttribute('data-screen');
+        if (targetScreenId === screenId) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    
+    // Si se está mostrando una pantalla principal, cerrar el menú lateral
+    if (['home-screen', 'food-log-screen', 'camera-screen', 'stats-screen', 'profile-screen'].includes(screenId)) {
+        document.getElementById('side-menu').classList.remove('open');
+        
+        // Actualizar contenido según la pantalla
+        if (screenId === 'home-screen' && authManager.isAuthenticated()) {
+            updateDashboard();
+        }
+    }
+}
+
+// Abrir/cerrar menú lateral
+function toggleSideMenu() {
+    const sideMenu = document.getElementById('side-menu');
+    const overlay = document.getElementById('modal-overlay');
+    
+    if (sideMenu.classList.contains('open')) {
+        sideMenu.classList.remove('open');
+        overlay.classList.remove('active');
+    } else {
+        sideMenu.classList.add('open');
+        overlay.classList.add('active');
+    }
+}
+
+// Mostrar/ocultar modal
+function toggleModal(modalId, show = true) {
+    const modal = document.getElementById(modalId);
+    const overlay = document.getElementById('modal-overlay');
+    
+    if (!modal || !overlay) return;
+    
+    if (show) {
+        modal.classList.add('active');
+        overlay.classList.add('active');
+    } else {
+        modal.classList.remove('active');
+        overlay.classList.remove('active');
+    }
+}
+
+// Guardar el objetivo fitness seleccionado
+async function saveSelectedGoal() {
+    try {
+        const selectedGoal = document.querySelector('.goal-option.selected');
+        
+        if (!selectedGoal) {
+            showNotification('Por favor, selecciona un objetivo');
+            return;
+        }
+        
+        const goalId = selectedGoal.getAttribute('data-goal');
+        
+        // Actualizar preferencias de usuario
+        await userPreferences.updateFitnessGoals({
+            primaryGoal: goalId,
+            // Valores predeterminados según el objetivo
+            fitnessLevel: 'beginner',
+            workoutFrequency: 3,
+            preferredWorkouts: []
+        });
         
         // Cerrar modal
         toggleModal('fitness-goal-modal', false);
         
-        // Mostrar notificación de éxito
-        showNotification('¡Objetivo de fitness guardado con éxito!');
+        // Mostrar confirmación
+        showNotification(`Objetivo establecido: ${getGoalDisplayName(goalId)}`);
+        
+        // Redirigir al home y actualizar dashboard
+        showScreen('home-screen');
+        updateDashboard();
     } catch (error) {
-        console.error('Error al guardar objetivo fitness:', error);
-        showNotification('Error al guardar objetivo fitness');
-    } finally {
-        showLoading(false);
+        console.error('Error al guardar objetivo:', error);
+        showNotification('Error al guardar objetivo');
     }
 }
 
-// Obtener nombre mostrable del objetivo
+// Obtener nombre amigable del objetivo
 function getGoalDisplayName(goalId) {
-    const goalMap = {
+    const goalNames = {
         'weightLoss': 'Pérdida de peso',
         'muscleGain': 'Ganancia muscular',
         'maintenance': 'Mantenimiento',
@@ -586,359 +799,5 @@ function getGoalDisplayName(goalId) {
         'healthImprovement': 'Mejora de salud'
     };
     
-    return goalMap[goalId] || 'No definido';
-}
-
-// Actualizar dashboard con datos del usuario
-async function updateDashboard() {
-    try {
-        console.log('Actualizando dashboard');
-        // Obtener objetivos y preferencias
-        const fitnessGoals = userPreferences.getFitnessGoals();
-        const nutritionGoals = userPreferences.getNutritionGoals();
-        
-        // Actualizar objetivo actual
-        const currentFitnessGoal = document.getElementById('current-fitness-goal');
-        if (currentFitnessGoal && fitnessGoals.primaryGoal) {
-            currentFitnessGoal.textContent = getGoalDisplayName(fitnessGoals.primaryGoal);
-        } else if (currentFitnessGoal) {
-            currentFitnessGoal.textContent = 'No definido';
-        }
-        
-        // Obtener y mostrar recomendaciones generales
-        try {
-            const recommendations = workoutRecommendations.getGeneralWorkoutRecommendations();
-            displayWorkoutRecommendations(recommendations);
-        } catch (error) {
-            console.error('Error al obtener recomendaciones:', error);
-        }
-        
-        // Actualizar plan semanal
-        try {
-            const weeklyPlan = workoutRecommendations.generateWeeklyPlan();
-            displayWeeklyPlan(weeklyPlan);
-        } catch (error) {
-            console.error('Error al generar plan semanal:', error);
-        }
-        
-        // Aquí se actualizarían otros datos del dashboard como calorías, actividad, etc.
-        // Usando datos ficticios por ahora
-        updateCaloriesProgress(1450, 2000);
-        updateActivityProgress(150, 300);
-        updateWaterProgress(1200, 2000);
-        
-        const workoutsCompleted = document.getElementById('workouts-completed');
-        if (workoutsCompleted) {
-            workoutsCompleted.textContent = '2/4';
-        }
-        
-        const weeklyActivityCalories = document.getElementById('weekly-activity-calories');
-        if (weeklyActivityCalories) {
-            weeklyActivityCalories.textContent = '750/2100';
-        }
-        
-        console.log('Dashboard actualizado correctamente');
-    } catch (error) {
-        console.error('Error al actualizar dashboard:', error);
-    }
-}
-
-// Actualizar progreso de calorías
-function updateCaloriesProgress(current, goal) {
-    const todayCalories = document.getElementById('today-calories');
-    const caloriesProgress = document.getElementById('calories-progress');
-    
-    if (todayCalories) {
-        todayCalories.textContent = `${current}/${goal}`;
-    }
-    
-    if (caloriesProgress) {
-        const percentage = Math.min(100, Math.round((current / goal) * 100));
-        caloriesProgress.querySelector('.progress').style.width = `${percentage}%`;
-    }
-}
-
-// Actualizar progreso de actividad
-function updateActivityProgress(current, goal) {
-    const todayActivity = document.getElementById('today-activity');
-    const activityProgress = document.getElementById('activity-progress');
-    
-    if (todayActivity) {
-        todayActivity.textContent = `${current}/${goal}`;
-    }
-    
-    if (activityProgress) {
-        const percentage = Math.min(100, Math.round((current / goal) * 100));
-        activityProgress.querySelector('.progress').style.width = `${percentage}%`;
-    }
-}
-
-// Actualizar progreso de agua
-function updateWaterProgress(current, goal) {
-    const todayWater = document.getElementById('today-water');
-    const waterProgress = document.getElementById('water-progress');
-    
-    if (todayWater) {
-        todayWater.textContent = `${current}/${goal}`;
-    }
-    
-    if (waterProgress) {
-        const percentage = Math.min(100, Math.round((current / goal) * 100));
-        waterProgress.querySelector('.progress').style.width = `${percentage}%`;
-    }
-}
-
-// Mostrar recomendaciones de entrenamiento
-function displayWorkoutRecommendations(recommendations) {
-    const container = document.getElementById('recommendations-container');
-    if (!container) return;
-    
-    container.innerHTML = ''; // Limpiar contenedor
-    
-    if (!recommendations || recommendations.length === 0) {
-        container.innerHTML = `
-            <div class="no-recommendations">
-                <p>No hay recomendaciones disponibles en este momento.</p>
-                <p>Establece tu objetivo de fitness para obtener recomendaciones personalizadas.</p>
-            </div>
-        `;
-        return;
-    }
-    
-    // Crear tarjetas para cada recomendación
-    recommendations.forEach(rec => {
-        const card = document.createElement('div');
-        card.className = 'recommendation-card';
-        
-        card.innerHTML = `
-            <div class="recommendation-icon">
-                <i class="${rec.icon || 'fas fa-dumbbell'}"></i>
-            </div>
-            <div class="recommendation-info">
-                <h4>${rec.title}</h4>
-                <p>${rec.description}</p>
-                <span class="duration"><i class="far fa-clock"></i> ${rec.duration} min</span>
-            </div>
-        `;
-        
-        // Hacer la tarjeta clickeable para comenzar entrenamiento
-        card.addEventListener('click', () => {
-            // Guardar recomendación seleccionada para usar en pantalla de entrenamiento
-            window.selectedWorkout = rec;
-            
-            // Ir a pantalla de entrenamiento
-            showScreen('workout-screen');
-        });
-        
-        container.appendChild(card);
-    });
-}
-
-// Mostrar plan semanal
-function displayWeeklyPlan(weeklyPlan) {
-    const container = document.getElementById('weekly-plan-container');
-    if (!container) return;
-    
-    container.innerHTML = ''; // Limpiar contenedor
-    
-    if (!weeklyPlan || weeklyPlan.length === 0) {
-        container.innerHTML = `
-            <div class="no-plan">
-                <p>No hay plan de entrenamiento disponible.</p>
-                <p>Establece tu objetivo de fitness para generar un plan personalizado.</p>
-            </div>
-        `;
-        return;
-    }
-    
-    // Crear tabla para el plan semanal
-    const table = document.createElement('table');
-    table.className = 'weekly-plan-table';
-    
-    // Crear fila para cada día
-    weeklyPlan.forEach(day => {
-        const row = document.createElement('tr');
-        
-        // Columna del día
-        const dayCell = document.createElement('td');
-        dayCell.className = 'day-cell';
-        dayCell.textContent = day.day;
-        row.appendChild(dayCell);
-        
-        // Columna del entrenamiento
-        const workoutCell = document.createElement('td');
-        workoutCell.className = 'workout-cell';
-        
-        if (day.hasWorkout) {
-            workoutCell.innerHTML = `
-                <div class="workout-info">
-                    <i class="${getWorkoutIcon(day.workoutType || 'mixed')}"></i>
-                    <span>${day.workoutName || 'Entrenamiento'}</span>
-                </div>
-            `;
-            workoutCell.classList.add('has-workout');
-        } else {
-            workoutCell.innerHTML = `
-                <div class="rest-day">
-                    <i class="fas fa-couch"></i>
-                    <span>Descanso</span>
-                </div>
-            `;
-        }
-        
-        row.appendChild(workoutCell);
-        table.appendChild(row);
-    });
-    
-    container.appendChild(table);
-}
-
-// Obtener icono para tipo de entrenamiento
-function getWorkoutIcon(workoutType) {
-    const icons = {
-        'cardio': 'fas fa-running',
-        'strength': 'fas fa-dumbbell',
-        'hiit': 'fas fa-bolt',
-        'flexibility': 'fas fa-child',
-        'mixed': 'fas fa-th-list',
-        'recovery': 'fas fa-heart',
-        'active_rest': 'fas fa-walking',
-        'agility': 'fas fa-fist-raised'
-    };
-    
-    return icons[workoutType] || 'fas fa-dumbbell';
-}
-
-// Mostrar notificación
-function showNotification(message, duration = 3000) {
-    // Usar notificación existente o crear una nueva
-    let notification = document.getElementById('notification');
-    
-    if (!notification) {
-        notification = document.createElement('div');
-        notification.id = 'notification';
-        document.body.appendChild(notification);
-    }
-    
-    notification.textContent = message;
-    notification.classList.add('active');
-    
-    // Ocultar después de duración
-    setTimeout(() => {
-        notification.classList.remove('active');
-    }, duration);
-}
-
-// Mostrar/ocultar indicador de carga
-function showLoading(show = true) {
-    const loadingIndicator = document.getElementById('loading-indicator');
-    
-    if (!loadingIndicator) return;
-    
-    if (show) {
-        loadingIndicator.classList.add('active');
-    } else {
-        loadingIndicator.classList.remove('active');
-    }
-}
-
-// Mostrar pantalla de error
-function showErrorScreen(message) {
-    const errorMessage = document.getElementById('error-message');
-    if (errorMessage) {
-        errorMessage.textContent = message;
-    }
-    
-    showScreen('error-screen');
-}
-
-// Mostrar pantalla específica
-function showScreen(screenId) {
-    // Ocultar todas las pantallas
-    document.querySelectorAll('.screen').forEach(screen => {
-        screen.classList.remove('active');
-    });
-    
-    // Mostrar la pantalla solicitada
-    const screenToShow = document.getElementById(screenId);
-    if (screenToShow) {
-        screenToShow.classList.add('active');
-        
-        // Actualizar navegación
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.getAttribute('data-screen') === screenId);
-        });
-        
-        document.querySelectorAll('.menu-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.getAttribute('data-screen') === screenId);
-        });
-        
-        // Si es la pantalla de scanner, inicializar cámara
-        if (screenId === 'scanner-screen') {
-            // Importar dinámicamente el módulo camera.js
-            import('./camera.js')
-                .then(cameraModule => {
-                    // Inicializar la cámara
-                    cameraModule.initCamera()
-                        .catch(error => {
-                            console.error('Error al inicializar la cámara:', error);
-                            showNotification('Error al inicializar la cámara. Verifica los permisos.');
-                        });
-                })
-                .catch(error => {
-                    console.error('Error al cargar el módulo de cámara:', error);
-                });
-        }
-        
-        // Si es cualquier otra pantalla y la cámara está activa, detenerla
-        else if (screenId !== 'scanner-screen') {
-            import('./camera.js')
-                .then(cameraModule => {
-                    if (typeof cameraModule.stopCamera === 'function') {
-                        cameraModule.stopCamera();
-                    }
-                })
-                .catch(() => {
-                    // Ignorar errores si el módulo no está cargado
-                });
-        }
-    }
-}
-
-// Mostrar/ocultar menú lateral
-function toggleSideMenu() {
-    const sideMenu = document.getElementById('side-menu');
-    const modalOverlay = document.getElementById('modal-overlay');
-    
-    if (sideMenu) {
-        sideMenu.classList.toggle('open');
-        
-        if (sideMenu.classList.contains('open')) {
-            modalOverlay.classList.add('active');
-        } else {
-            modalOverlay.classList.remove('active');
-        }
-    }
-}
-
-// Mostrar/ocultar modal
-function toggleModal(modalId, show = true) {
-    const modal = document.getElementById(modalId);
-    const modalOverlay = document.getElementById('modal-overlay');
-    
-    if (modal) {
-        if (show) {
-            modal.classList.add('active');
-            modalOverlay.classList.add('active');
-        } else {
-            modal.classList.remove('active');
-            modalOverlay.classList.remove('active');
-        }
-    }
-}
-
-// Exportar funciones útiles
-window.showScreen = showScreen;
-window.toggleModal = toggleModal;
-window.showNotification = showNotification;
-window.showLoading = showLoading; 
+    return goalNames[goalId] || 'Objetivo personalizado';
+} 
