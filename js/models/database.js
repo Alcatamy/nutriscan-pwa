@@ -61,6 +61,20 @@ class NutriScanDB {
                 if (!db.objectStoreNames.contains('allergens')) {
                     db.createObjectStore('allergens', { keyPath: 'foodId' });
                 }
+                
+                // Crear almacén para entrenamientos personalizados
+                if (!db.objectStoreNames.contains('custom_workouts')) {
+                    const workoutsStore = db.createObjectStore('custom_workouts', { keyPath: 'id' });
+                    workoutsStore.createIndex('type', 'type', { unique: false });
+                    workoutsStore.createIndex('level', 'level', { unique: false });
+                }
+                
+                // Crear almacén para historial de entrenamientos
+                if (!db.objectStoreNames.contains('workout_history')) {
+                    const historyStore = db.createObjectStore('workout_history', { keyPath: 'id', autoIncrement: true });
+                    historyStore.createIndex('date', 'date', { unique: false });
+                    historyStore.createIndex('workoutId', 'workoutId', { unique: false });
+                }
             };
 
             request.onsuccess = (event) => {
@@ -456,6 +470,113 @@ class NutriScanDB {
                 reject(event.target.error);
             };
         });
+    }
+
+    // Guardar un entrenamiento personalizado
+    async saveCustomWorkout(workout) {
+        try {
+            if (!workout.id) {
+                workout.id = `custom-${Date.now()}`;
+            }
+            
+            const transaction = this.db.transaction(['custom_workouts'], 'readwrite');
+            const store = transaction.objectStore('custom_workouts');
+            
+            await this.performTransaction(store, 'put', workout);
+            console.log(`Entrenamiento personalizado guardado: ${workout.name}`);
+            return workout.id;
+        } catch (error) {
+            console.error('Error al guardar entrenamiento personalizado:', error);
+            return null;
+        }
+    }
+    
+    // Obtener todos los entrenamientos personalizados
+    async getCustomWorkouts() {
+        try {
+            const transaction = this.db.transaction(['custom_workouts'], 'readonly');
+            const store = transaction.objectStore('custom_workouts');
+            
+            return await this.performCursorRequest(store.openCursor());
+        } catch (error) {
+            console.error('Error al obtener entrenamientos personalizados:', error);
+            return [];
+        }
+    }
+    
+    // Obtener entrenamiento personalizado por ID
+    async getCustomWorkoutById(id) {
+        try {
+            const transaction = this.db.transaction(['custom_workouts'], 'readonly');
+            const store = transaction.objectStore('custom_workouts');
+            
+            return await this.performTransaction(store, 'get', id);
+        } catch (error) {
+            console.error(`Error al obtener entrenamiento con ID ${id}:`, error);
+            return null;
+        }
+    }
+    
+    // Eliminar un entrenamiento personalizado
+    async deleteCustomWorkout(id) {
+        try {
+            const transaction = this.db.transaction(['custom_workouts'], 'readwrite');
+            const store = transaction.objectStore('custom_workouts');
+            
+            await this.performTransaction(store, 'delete', id);
+            console.log(`Entrenamiento ${id} eliminado`);
+            return true;
+        } catch (error) {
+            console.error(`Error al eliminar entrenamiento ${id}:`, error);
+            return false;
+        }
+    }
+    
+    // Registrar un entrenamiento completado en el historial
+    async logWorkout(workout, duration, calories) {
+        try {
+            const today = new Date();
+            const date = today.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+            
+            const transaction = this.db.transaction(['workout_history'], 'readwrite');
+            const store = transaction.objectStore('workout_history');
+            
+            const entry = {
+                date,
+                timestamp: today.getTime(),
+                workoutId: workout.id,
+                workoutName: workout.name,
+                workoutType: workout.type,
+                duration: duration || workout.duration,
+                calories: calories || workout.calories,
+                completed: true
+            };
+            
+            const id = await this.performTransaction(store, 'add', entry);
+            console.log(`Entrenamiento registrado: ${workout.name}`);
+            return id;
+        } catch (error) {
+            console.error('Error al registrar entrenamiento:', error);
+            return null;
+        }
+    }
+    
+    // Obtener historial de entrenamientos
+    async getWorkoutHistory(limit = 10) {
+        try {
+            const transaction = this.db.transaction(['workout_history'], 'readonly');
+            const store = transaction.objectStore('workout_history');
+            const index = store.index('date');
+            
+            // Obtener entradas ordenadas por fecha (más recientes primero)
+            const request = index.openCursor(null, 'prev');
+            const history = await this.performCursorRequest(request, limit);
+            
+            return history;
+        } catch (error) {
+            console.error('Error al obtener historial de entrenamientos:', error);
+            return [];
+        }
     }
 }
 

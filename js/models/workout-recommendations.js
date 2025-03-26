@@ -271,204 +271,314 @@ class WorkoutRecommendations {
         }
     }
 
-    // Recomendaciones generales no basadas en alimentos específicos
+    // Generar recomendaciones generales de entrenamiento
     getGeneralWorkoutRecommendations() {
         try {
             const fitnessGoals = userPreferences.getFitnessGoals();
-            const primaryGoal = fitnessGoals.primaryGoal || 'maintenance';
+            const primaryGoal = fitnessGoals.primaryGoal;
             const fitnessLevel = fitnessGoals.fitnessLevel || 'beginner';
             
-            // Recomendaciones según el objetivo
-            const goalRecommendations = {
-                weightLoss: [
-                    { type: 'cardio', probability: 0.4 },
-                    { type: 'hiit', probability: 0.4 },
-                    { type: 'strength', probability: 0.2 }
-                ],
-                muscleGain: [
-                    { type: 'strength', probability: 0.7 },
-                    { type: 'recovery', probability: 0.2 },
-                    { type: 'cardio', probability: 0.1 }
-                ],
-                maintenance: [
-                    { type: 'cardio', probability: 0.3 },
-                    { type: 'strength', probability: 0.3 },
-                    { type: 'flexibility', probability: 0.2 },
-                    { type: 'hiit', probability: 0.2 }
-                ],
-                athleticPerformance: [
-                    { type: 'cardio', probability: 0.3 },
-                    { type: 'strength', probability: 0.3 },
-                    { type: 'hiit', probability: 0.3 },
-                    { type: 'recovery', probability: 0.1 }
-                ],
-                healthImprovement: [
-                    { type: 'cardio', probability: 0.4 },
-                    { type: 'strength', probability: 0.3 },
-                    { type: 'flexibility', probability: 0.3 }
-                ]
-            };
-            
-            // Seleccionar tipo de entrenamiento según probabilidades
-            const typeOptions = goalRecommendations[primaryGoal] || goalRecommendations.maintenance;
-            const random = Math.random();
-            let cumulativeProbability = 0;
-            let selectedType = typeOptions[0].type;
-            
-            for (const option of typeOptions) {
-                cumulativeProbability += option.probability;
-                if (random <= cumulativeProbability) {
-                    selectedType = option.type;
-                    break;
-                }
+            // Si no hay objetivo definido, dar recomendaciones básicas
+            if (!primaryGoal) {
+                return [
+                    {
+                        title: 'Entrenamiento básico para principiantes',
+                        description: 'Una sesión suave de cardio combinado con ejercicios de fuerza.',
+                        workoutType: 'mixed',
+                        duration: 30,
+                        icon: 'fas fa-heartbeat',
+                        workout: this.workouts.cardio_beginner
+                    },
+                    {
+                        title: 'Ejercicios de movilidad',
+                        description: 'Mejora tu flexibilidad y rango de movimiento.',
+                        workoutType: 'flexibility',
+                        duration: 20,
+                        icon: 'fas fa-child'
+                    }
+                ];
             }
             
-            // Títulos y descripciones según el tipo
-            const recommendations = [{
-                title: `Entrenamiento de ${this.workoutTypes[selectedType].name} recomendado`,
-                description: this.workoutTypes[selectedType].description,
-                workoutType: selectedType,
-                duration: selectedType === 'hiit' ? 25 : selectedType === 'recovery' ? 20 : 30,
-                icon: `fas ${this.workoutTypes[selectedType].icon}`
-            }];
+            // Recomendaciones basadas en el objetivo primario
+            const recommendations = [];
             
-            // Añadir entrenamientos concretos
-            for (const rec of recommendations) {
-                // Buscar entrenamientos del tipo y nivel adecuados
-                const matchingWorkouts = Object.values(this.workouts).filter(workout => 
-                    workout.type === rec.workoutType && workout.level === fitnessLevel
-                );
-                
-                if (matchingWorkouts.length > 0) {
-                    // Seleccionar uno aleatorio
-                    const selectedWorkout = matchingWorkouts[Math.floor(Math.random() * matchingWorkouts.length)];
-                    rec.workout = selectedWorkout;
-                } else {
-                    // Si no hay del nivel exacto, buscar alguno del tipo correcto
-                    const anyLevelWorkouts = Object.values(this.workouts).filter(workout => 
-                        workout.type === rec.workoutType
-                    );
+            switch (primaryGoal) {
+                case 'weightLoss':
+                    recommendations.push({
+                        title: 'Quema de calorías',
+                        description: 'Entrenamiento cardiovascular para maximizar la quema de calorías.',
+                        workoutType: 'cardio',
+                        duration: 30,
+                        icon: 'fas fa-fire-alt',
+                        workout: fitnessLevel === 'beginner' ? this.workouts.cardio_beginner : this.workouts.cardio_intermediate
+                    });
+                    recommendations.push({
+                        title: 'HIIT para pérdida de peso',
+                        description: 'Entrenamiento de intervalos de alta intensidad para continuar quemando calorías durante horas.',
+                        workoutType: 'hiit',
+                        duration: 25,
+                        icon: 'fas fa-bolt'
+                    });
+                    recommendations.push({
+                        title: 'Entrenamiento de fuerza',
+                        description: 'Mantén tu masa muscular mientras pierdes grasa.',
+                        workoutType: 'strength',
+                        duration: 35,
+                        icon: 'fas fa-dumbbell',
+                        workout: this.workouts.strength_beginner
+                    });
+                    break;
                     
-                    if (anyLevelWorkouts.length > 0) {
-                        rec.workout = anyLevelWorkouts[Math.floor(Math.random() * anyLevelWorkouts.length)];
-                    }
-                }
+                case 'muscleGain':
+                    recommendations.push({
+                        title: 'Entrenamiento de hipertrofia',
+                        description: 'Enfocado en el crecimiento muscular con series de 8-12 repeticiones.',
+                        workoutType: 'strength',
+                        duration: 45,
+                        icon: 'fas fa-dumbbell'
+                    });
+                    recommendations.push({
+                        title: 'Entrenamiento de fuerza compuesto',
+                        description: 'Ejercicios que trabajan múltiples grupos musculares para máximo crecimiento.',
+                        workoutType: 'strength',
+                        duration: 40,
+                        icon: 'fas fa-dumbbell'
+                    });
+                    recommendations.push({
+                        title: 'Recuperación activa',
+                        description: 'Sesión suave para mejorar la recuperación entre entrenamientos intensos.',
+                        workoutType: 'recovery',
+                        duration: 30,
+                        icon: 'fas fa-heart'
+                    });
+                    break;
+                    
+                case 'maintenance':
+                    recommendations.push({
+                        title: 'Entrenamiento mixto',
+                        description: 'Combinación de cardio y fuerza para mantener tu condición física actual.',
+                        workoutType: 'mixed',
+                        duration: 40,
+                        icon: 'fas fa-balance-scale-right'
+                    });
+                    recommendations.push({
+                        title: 'Cardio moderado',
+                        description: 'Mantén tu salud cardiovascular con esta sesión de intensidad media.',
+                        workoutType: 'cardio',
+                        duration: 30,
+                        icon: 'fas fa-running'
+                    });
+                    recommendations.push({
+                        title: 'Yoga para flexibilidad',
+                        description: 'Mejora tu flexibilidad y reduce el estrés.',
+                        workoutType: 'flexibility',
+                        duration: 35,
+                        icon: 'fas fa-child'
+                    });
+                    break;
+                    
+                case 'athleticPerformance':
+                    recommendations.push({
+                        title: 'Entrenamiento de velocidad',
+                        description: 'Mejora tu velocidad y agilidad con estos ejercicios.',
+                        workoutType: 'cardio',
+                        duration: 35,
+                        icon: 'fas fa-tachometer-alt'
+                    });
+                    recommendations.push({
+                        title: 'Fuerza explosiva',
+                        description: 'Desarrolla potencia y explosividad para mejorar tu rendimiento atlético.',
+                        workoutType: 'strength',
+                        duration: 45,
+                        icon: 'fas fa-bolt'
+                    });
+                    recommendations.push({
+                        title: 'Entrenamiento de agilidad',
+                        description: 'Mejora tus reflejos y coordinación con estos ejercicios.',
+                        workoutType: 'agility',
+                        duration: 30,
+                        icon: 'fas fa-running'
+                    });
+                    break;
+                    
+                case 'healthImprovement':
+                    recommendations.push({
+                        title: 'Caminata activa',
+                        description: 'Mejora tu salud cardiovascular con esta caminata de ritmo moderado.',
+                        workoutType: 'cardio',
+                        duration: 30,
+                        icon: 'fas fa-walking'
+                    });
+                    recommendations.push({
+                        title: 'Entrenamiento de fuerza suave',
+                        description: 'Fortalece tus músculos con ejercicios de baja intensidad.',
+                        workoutType: 'strength',
+                        duration: 25,
+                        icon: 'fas fa-dumbbell'
+                    });
+                    recommendations.push({
+                        title: 'Yoga para principiantes',
+                        description: 'Mejora tu flexibilidad y equilibrio con esta sesión de yoga suave.',
+                        workoutType: 'flexibility',
+                        duration: 30,
+                        icon: 'fas fa-child'
+                    });
+                    break;
             }
             
             return recommendations;
-            
         } catch (error) {
             console.error('Error al generar recomendaciones generales:', error);
-            return [{
-                title: 'Entrenamiento recomendado',
-                description: 'Actividad física regular para mantener tu salud',
-                workoutType: 'cardio',
-                duration: 30,
-                icon: 'fa-running'
-            }];
+            return [
+                {
+                    title: 'Entrenamiento general',
+                    description: 'Una sesión mixta de cardio y fuerza.',
+                    workoutType: 'mixed',
+                    duration: 30,
+                    icon: 'fas fa-dumbbell'
+                }
+            ];
         }
     }
-
-    // Obtener un plan semanal basado en los objetivos del usuario
+    
+    // Generar plan semanal de entrenamientos
     generateWeeklyPlan() {
         try {
             const fitnessGoals = userPreferences.getFitnessGoals();
+            const workoutFrequency = fitnessGoals.workoutFrequency || 3;
             const primaryGoal = fitnessGoals.primaryGoal || 'maintenance';
-            const fitnessLevel = fitnessGoals.fitnessLevel || 'beginner';
-            const frequency = fitnessGoals.workoutFrequency || 3;
             
-            // Estructura de la semana para diferentes objetivos y frecuencias
-            const weeklyTemplates = {
-                weightLoss: {
-                    3: ['cardio', 'hiit', 'strength'],
-                    4: ['cardio', 'hiit', 'strength', 'cardio'],
-                    5: ['cardio', 'hiit', 'strength', 'cardio', 'flexibility'],
-                    6: ['cardio', 'hiit', 'strength', 'cardio', 'hiit', 'flexibility']
-                },
-                muscleGain: {
-                    3: ['strength', 'strength', 'recovery'],
-                    4: ['strength', 'strength', 'cardio', 'recovery'],
-                    5: ['strength', 'strength', 'cardio', 'strength', 'recovery'],
-                    6: ['strength', 'strength', 'cardio', 'strength', 'strength', 'recovery']
-                },
-                maintenance: {
-                    3: ['cardio', 'strength', 'flexibility'],
-                    4: ['cardio', 'strength', 'hiit', 'flexibility'],
-                    5: ['cardio', 'strength', 'hiit', 'strength', 'flexibility'],
-                    6: ['cardio', 'strength', 'hiit', 'cardio', 'strength', 'flexibility']
-                },
-                athleticPerformance: {
-                    3: ['cardio', 'strength', 'sport-specific'],
-                    4: ['cardio', 'strength', 'hiit', 'sport-specific'],
-                    5: ['cardio', 'strength', 'hiit', 'sport-specific', 'recovery'],
-                    6: ['cardio', 'strength', 'hiit', 'sport-specific', 'strength', 'recovery']
-                },
-                healthImprovement: {
-                    3: ['cardio', 'strength-light', 'flexibility'],
-                    4: ['walking', 'strength-light', 'cardio', 'flexibility'],
-                    5: ['walking', 'strength-light', 'cardio', 'swimming', 'flexibility'],
-                    6: ['walking', 'strength-light', 'cardio', 'walking', 'swimming', 'flexibility']
-                }
-            };
+            // Configurar los días de la semana
+            const days = [
+                { day: 'Lunes', hasWorkout: false },
+                { day: 'Martes', hasWorkout: false },
+                { day: 'Miércoles', hasWorkout: false },
+                { day: 'Jueves', hasWorkout: false },
+                { day: 'Viernes', hasWorkout: false },
+                { day: 'Sábado', hasWorkout: false },
+                { day: 'Domingo', hasWorkout: false }
+            ];
             
-            // Obtener el template adecuado o usar uno por defecto
-            const goalTemplates = weeklyTemplates[primaryGoal] || weeklyTemplates.maintenance;
-            const frequencyKey = Math.min(6, Math.max(3, frequency)); // Asegurar que la frecuencia esté entre 3-6
-            const weekTemplate = goalTemplates[frequencyKey] || goalTemplates[3];
+            // Función para mezclar array aleatoriamente
+            const shuffleArray = arr => arr.sort(() => Math.random() - 0.5);
             
-            // Generar el plan semanal
-            const weekPlan = [];
-            const daysOfWeek = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+            // Distribución de entrenamientos según el objetivo
+            let workoutTypes = [];
             
-            // Decidir qué días incluir según frecuencia (distribuidos en la semana)
-            const selectedDays = [];
-            const step = Math.floor(7 / frequencyKey);
-            let currentDay = 0;
-            
-            for (let i = 0; i < frequencyKey; i++) {
-                selectedDays.push(currentDay);
-                currentDay = (currentDay + step) % 7;
+            switch (primaryGoal) {
+                case 'weightLoss':
+                    workoutTypes = [
+                        { type: 'cardio', name: 'Cardio' },
+                        { type: 'hiit', name: 'HIIT' },
+                        { type: 'strength', name: 'Fuerza' },
+                        { type: 'cardio', name: 'Cardio' },
+                        { type: 'hiit', name: 'HIIT' },
+                        { type: 'flexibility', name: 'Recuperación' },
+                        { type: 'active_rest', name: 'Descanso activo' }
+                    ];
+                    break;
+                    
+                case 'muscleGain':
+                    workoutTypes = [
+                        { type: 'strength', name: 'Fuerza - Tren superior' },
+                        { type: 'strength', name: 'Fuerza - Tren inferior' },
+                        { type: 'strength', name: 'Fuerza - Empuje' },
+                        { type: 'strength', name: 'Fuerza - Tirón' },
+                        { type: 'cardio', name: 'Cardio moderado' },
+                        { type: 'flexibility', name: 'Recuperación' },
+                        { type: 'active_rest', name: 'Descanso activo' }
+                    ];
+                    break;
+                    
+                case 'maintenance':
+                    workoutTypes = [
+                        { type: 'cardio', name: 'Cardio' },
+                        { type: 'strength', name: 'Fuerza' },
+                        { type: 'mixed', name: 'Mixto' },
+                        { type: 'hiit', name: 'HIIT' },
+                        { type: 'flexibility', name: 'Flexibilidad' },
+                        { type: 'active_rest', name: 'Actividad ligera' },
+                        { type: 'active_rest', name: 'Descanso activo' }
+                    ];
+                    break;
+                    
+                case 'athleticPerformance':
+                    workoutTypes = [
+                        { type: 'cardio', name: 'Velocidad' },
+                        { type: 'strength', name: 'Fuerza explosiva' },
+                        { type: 'agility', name: 'Agilidad' },
+                        { type: 'cardio', name: 'Resistencia' },
+                        { type: 'strength', name: 'Fuerza' },
+                        { type: 'flexibility', name: 'Movilidad' },
+                        { type: 'active_rest', name: 'Recuperación' }
+                    ];
+                    break;
+                    
+                case 'healthImprovement':
+                    workoutTypes = [
+                        { type: 'cardio', name: 'Caminata' },
+                        { type: 'strength', name: 'Fuerza suave' },
+                        { type: 'flexibility', name: 'Yoga' },
+                        { type: 'cardio', name: 'Cardio ligero' },
+                        { type: 'flexibility', name: 'Estiramientos' },
+                        { type: 'active_rest', name: 'Actividad ligera' },
+                        { type: 'active_rest', name: 'Descanso' }
+                    ];
+                    break;
+                    
+                default:
+                    workoutTypes = [
+                        { type: 'cardio', name: 'Cardio' },
+                        { type: 'strength', name: 'Fuerza' },
+                        { type: 'flexibility', name: 'Flexibilidad' },
+                        { type: 'mixed', name: 'Mixto' },
+                        { type: 'active_rest', name: 'Actividad ligera' },
+                        { type: 'active_rest', name: 'Descanso' },
+                        { type: 'active_rest', name: 'Descanso' }
+                    ];
             }
             
-            // Para cada día de la semana
-            for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
-                const dayInfo = {
-                    day: daysOfWeek[dayIndex],
-                    dayOfWeek: dayIndex,
-                    hasWorkout: false,
-                    workout: null
-                };
-                
-                // Si este día debe incluir entrenamiento
-                if (selectedDays.includes(dayIndex)) {
-                    const workoutTypeIndex = selectedDays.indexOf(dayIndex);
-                    const workoutType = weekTemplate[workoutTypeIndex];
-                    
-                    // Buscar entrenamientos del tipo y nivel adecuados
-                    const matchingWorkouts = Object.values(this.workouts).filter(workout => 
-                        workout.type === workoutType && workout.level === fitnessLevel
-                    );
-                    
-                    if (matchingWorkouts.length > 0) {
-                        dayInfo.hasWorkout = true;
-                        // Seleccionar uno aleatorio
-                        dayInfo.workout = matchingWorkouts[Math.floor(Math.random() * matchingWorkouts.length)];
-                    } else {
-                        // Si no hay del tipo específico, incluir indicación del tipo
-                        dayInfo.hasWorkout = true;
-                        dayInfo.workoutType = workoutType;
-                        dayInfo.workoutName = this.workoutTypes[workoutType]?.name || 'Entrenamiento';
-                    }
+            // Mezclar los tipos de entrenamiento
+            const shuffledWorkouts = shuffleArray([...workoutTypes]);
+            
+            // Distribuir entrenamientos según frecuencia deseada
+            // Primero ordenamos por prioridad para cada objetivo
+            const workoutDayIndices = [];
+            
+            // Para entrenamientos con frecuencia de 3-4, incluir lunes, miércoles, viernes
+            if (workoutFrequency <= 4) {
+                workoutDayIndices.push(0, 2, 4); // Lunes, Miércoles, Viernes
+                if (workoutFrequency === 4) {
+                    workoutDayIndices.push(6); // Domingo si son 4 días
                 }
-                
-                weekPlan.push(dayInfo);
+            } else {
+                // Para 5+ días, descansar al menos un día en fin de semana
+                workoutDayIndices.push(0, 1, 2, 3, 4); // Lunes a Viernes
+                if (workoutFrequency === 6) {
+                    workoutDayIndices.push(5); // Sábado si son 6 días
+                }
             }
             
-            return weekPlan;
+            // Asignar entrenamientos a los días
+            workoutDayIndices.slice(0, workoutFrequency).forEach((dayIndex, i) => {
+                days[dayIndex].hasWorkout = true;
+                days[dayIndex].workoutName = shuffledWorkouts[i % shuffledWorkouts.length].name;
+                days[dayIndex].workoutType = shuffledWorkouts[i % shuffledWorkouts.length].type;
+            });
             
+            return days;
         } catch (error) {
             console.error('Error al generar plan semanal:', error);
-            return [];
+            // Plan por defecto en caso de error
+            return [
+                { day: 'Lunes', hasWorkout: true, workoutName: 'Cardio' },
+                { day: 'Martes', hasWorkout: false },
+                { day: 'Miércoles', hasWorkout: true, workoutName: 'Fuerza' },
+                { day: 'Jueves', hasWorkout: false },
+                { day: 'Viernes', hasWorkout: true, workoutName: 'Mixto' },
+                { day: 'Sábado', hasWorkout: false },
+                { day: 'Domingo', hasWorkout: false }
+            ];
         }
     }
 
