@@ -66,16 +66,9 @@ async function initializeApp() {
         setupAuthStateObserver();
         
         // Verificar si hay un usuario autenticado
-        const currentUser = firebase.auth().currentUser;
-        if (currentUser) {
-            console.log('Usuario ya autenticado:', currentUser.displayName || currentUser.email);
-            updateLoadingStatus('Cargando tu perfil...');
-            await handleUserSignIn(currentUser);
-        } else {
-            console.log('No hay usuario autenticado, mostrando pantalla de login');
-            // Mostrar pantalla de login
-            showScreen('login-screen');
-        }
+        // Después de la inicialización, mostrar siempre la pantalla de login primero
+        // El observer de autenticación se encargará de manejar el caso donde el usuario ya está autenticado
+        showScreen('login-screen');
     } catch (error) {
         console.error('Error en la inicialización:', error);
         showErrorScreen('Error durante la inicialización: ' + error.message);
@@ -373,6 +366,10 @@ function setupUIEvents() {
     if (goalCancelBtn) {
         goalCancelBtn.addEventListener('click', () => {
             toggleModal('fitness-goal-modal', false);
+            // Si es la primera vez que se muestra el modal y el usuario cancela,
+            // mostrar la pantalla de inicio de todos modos
+            showScreen('home-screen');
+            updateDashboard();
         });
     }
     
@@ -384,6 +381,11 @@ function setupUIEvents() {
                 modal.classList.remove('active');
             });
             modalOverlay.classList.remove('active');
+            
+            // Si es la primera vez que se muestra el modal y el usuario lo cierra,
+            // mostrar la pantalla de inicio de todos modos
+            showScreen('home-screen');
+            updateDashboard();
         });
     }
     
@@ -456,11 +458,18 @@ function setupAuthStateObserver() {
     });
 }
 
+// Variable para controlar si es la primera vez que se inicia sesión
+let isFirstLogin = true;
+
 // Manejar inicio de sesión
 async function handleUserSignIn(user) {
     console.log('Manejando inicio de sesión para:', user.displayName || user.email);
     
     try {
+        // Mostrar pantalla de carga mientras se procesan los datos
+        showScreen('loading-screen');
+        updateLoadingStatus('Cargando perfil...');
+        
         // Asegurar que las preferencias están inicializadas
         if (!userPreferences.preferences) {
             await userPreferences.init();
@@ -497,24 +506,28 @@ async function handleUserSignIn(user) {
         const fitnessGoals = userPreferences.getFitnessGoals();
         console.log('Objetivos fitness actuales:', fitnessGoals);
         
-        if (!fitnessGoals.primaryGoal) {
+        // Primero ir siempre a la pantalla home
+        showScreen('home-screen');
+        
+        // Cargar el dashboard con datos disponibles
+        await updateDashboard();
+        
+        // Verificar si debe mostrarse el modal de selección de objetivo
+        if (!fitnessGoals.primaryGoal && isFirstLogin) {
             console.log('El usuario no tiene objetivo fitness, mostrando modal de selección');
-            // Primero ir a la pantalla home para que se vea el fondo
-            showScreen('home-screen');
-            
-            // Luego mostrar el modal de selección de objetivo
+            // Mostrar modal de selección después de que se haya cargado la pantalla principal
             setTimeout(() => {
                 toggleModal('fitness-goal-modal', true);
-            }, 300);
-        } else {
-            console.log('Usuario con objetivo fitness configurado, mostrando dashboard');
-            // Si ya tiene objetivos, ir directamente al home y actualizar
-            showScreen('home-screen');
-            await updateDashboard();
+            }, 500);
         }
+        
+        // Marcar que ya no es el primer inicio de sesión
+        isFirstLogin = false;
     } catch (error) {
         console.error('Error al manejar inicio de sesión:', error);
         showNotification('Error al cargar los datos de usuario');
+        // En caso de error, mostrar la pantalla principal de todos modos
+        showScreen('home-screen');
     }
 }
 
@@ -588,15 +601,25 @@ async function updateDashboard() {
         const currentFitnessGoal = document.getElementById('current-fitness-goal');
         if (currentFitnessGoal && fitnessGoals.primaryGoal) {
             currentFitnessGoal.textContent = getGoalDisplayName(fitnessGoals.primaryGoal);
+        } else if (currentFitnessGoal) {
+            currentFitnessGoal.textContent = 'No definido';
         }
         
         // Obtener y mostrar recomendaciones generales
-        const recommendations = workoutRecommendations.getGeneralWorkoutRecommendations();
-        displayWorkoutRecommendations(recommendations);
+        try {
+            const recommendations = workoutRecommendations.getGeneralWorkoutRecommendations();
+            displayWorkoutRecommendations(recommendations);
+        } catch (error) {
+            console.error('Error al obtener recomendaciones:', error);
+        }
         
         // Actualizar plan semanal
-        const weeklyPlan = workoutRecommendations.generateWeeklyPlan();
-        displayWeeklyPlan(weeklyPlan);
+        try {
+            const weeklyPlan = workoutRecommendations.generateWeeklyPlan();
+            displayWeeklyPlan(weeklyPlan);
+        } catch (error) {
+            console.error('Error al generar plan semanal:', error);
+        }
         
         // Aquí se actualizarían otros datos del dashboard como calorías, actividad, etc.
         // Usando datos ficticios por ahora
