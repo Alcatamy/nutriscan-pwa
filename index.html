@@ -101,6 +101,27 @@
 
         <!-- Contenido principal -->
         <main>
+            <!-- Pantalla de carga -->
+            <section id="loading-screen" class="screen">
+                <div class="loading-container">
+                    <div class="spinner-large"></div>
+                    <h2>Cargando NutriScan</h2>
+                    <p>Por favor, espera un momento mientras preparamos todo...</p>
+                </div>
+            </section>
+            
+            <!-- Pantalla de error -->
+            <section id="error-screen" class="screen">
+                <div class="error-container">
+                    <i class="fas fa-exclamation-triangle error-icon"></i>
+                    <h2>¡Ups! Algo salió mal</h2>
+                    <p id="error-message">No se pudo cargar la aplicación</p>
+                    <button id="retry-btn" class="primary-btn">
+                        <i class="fas fa-redo"></i> Intentar de nuevo
+                    </button>
+                </div>
+            </section>
+            
             <!-- Pantalla de login -->
             <section id="login-screen" class="screen">
                 <div class="login-container">
@@ -746,16 +767,16 @@
     </div>
 
     <!-- Scripts -->
-    <script type="module" src="js/app.js"></script>
     <script>
         // Configuración de Firebase
         const firebaseConfig = {
-            apiKey: "TU_API_KEY",
+            apiKey: "AIzaSyCVcltJ9MKV-9JtXL9ELYes8veODV-Qwfk",
             authDomain: "nutriscan-app.firebaseapp.com",
             projectId: "nutriscan-app",
             storageBucket: "nutriscan-app.appspot.com",
-            messagingSenderId: "TU_MESSAGING_SENDER_ID",
-            appId: "TU_APP_ID"
+            messagingSenderId: "145682529339",
+            appId: "1:145682529339:web:12b1e3c7e2df68355feb94",
+            measurementId: "G-0LHVTMCYS5"
         };
         
         // Inicializar Firebase
@@ -771,6 +792,16 @@
                     console.log('Error al registrar el Service Worker:', error);
                 });
         }
+        
+        // Variable global para el objetivo seleccionado
+        window.selectedGoal = null;
     </script>
+    
+    <!-- Cargar módulos principales como tipo module -->
+    <script type="module" src="js/models/database.js"></script>
+    <script type="module" src="js/models/user-preferences.js"></script>
+    <script type="module" src="js/models/workout-recommendations.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/init.js"></script>
 </body>
 </html>

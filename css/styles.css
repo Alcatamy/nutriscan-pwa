@@ -261,20 +261,24 @@ h1 {
   align-items: center;
   justify-content: center;
   height: 100%;
+  padding: 20px;
+  text-align: center;
 }
 
-.spinner {
-  width: 50px;
-  height: 50px;
-  border: 5px solid var(--surface-color);
-  border-top: 5px solid var(--primary-color);
+.spinner-large {
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  border: 6px solid #e0e0e0;
+  border-top-color: #4CAF50;
+  animation: spin 1.5s linear infinite;
+  margin-bottom: 24px;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Pantalla de resultados */
@@ -1126,22 +1130,21 @@ input:checked + .toggle-slider:before {
 /* Notificación */
 .notification {
   position: fixed;
-  bottom: 4.5rem;
+  bottom: -100px;
   left: 50%;
-  transform: translateX(-50%) translateY(100px);
+  transform: translateX(-50%);
   background-color: rgba(0, 0, 0, 0.8);
   color: white;
-  padding: 0.8rem 1.5rem;
-  border-radius: 25px;
-  font-size: 0.9rem;
-  z-index: 1000;
-  opacity: 0;
-  transition: all 0.3s ease;
+  padding: 12px 20px;
+  border-radius: 8px;
+  z-index: 1010;
+  transition: bottom 0.3s ease;
+  max-width: 90%;
+  text-align: center;
 }
 
-.notification.show {
-  transform: translateX(-50%) translateY(0);
-  opacity: 1;
+.notification.visible {
+  bottom: 20px;
 }
 
 /* Estilos específicos para la pantalla de escáner de códigos de barras */
@@ -2001,4 +2004,31 @@ input:checked + .toggle-slider:before {
     .workout-recommendation {
         width: calc(50% - 8px);
     }
+}
+
+/* ==== PANTALLAS DE CARGA Y ERROR ==== */
+.error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 20px;
+    text-align: center;
+}
+
+.error-icon {
+    font-size: 64px;
+    color: #f44336;
+    margin-bottom: 16px;
+}
+
+.error-container h2 {
+    margin-bottom: 12px;
+    color: #333;
+}
+
+.error-container p {
+    margin-bottom: 24px;
+    color: #666;
 }
