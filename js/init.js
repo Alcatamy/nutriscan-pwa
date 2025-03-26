@@ -4,6 +4,7 @@ import userPreferences from './models/user-preferences.js';
 import workoutRecommendations from './models/workout-recommendations.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('Iniciando aplicación NutriScan...');
     // Establecer pantalla de carga inicial
     showScreen('loading-screen');
     
@@ -18,26 +19,45 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Función principal de inicialización
 async function initializeApp() {
-    // Inicializar módulos
-    await Promise.all([
-        authManager.init(),
-        userPreferences.init(),
-        workoutRecommendations.init()
-    ]);
-    
-    // Configurar eventos de UI
-    setupUIEvents();
-    
-    // Manejar estado de autenticación
-    setupAuthStateObserver();
-    
-    // Verificar si hay un usuario autenticado
-    const currentUser = authManager.getCurrentUser();
-    if (currentUser) {
-        handleUserSignIn(currentUser);
-    } else {
-        // Mostrar pantalla de login
-        showScreen('login-screen');
+    try {
+        console.log('Inicializando módulos...');
+        // Inicializar Firebase primero
+        if (!firebase.apps.length) {
+            console.error('Firebase no está inicializado correctamente');
+            showErrorScreen('Error al inicializar Firebase');
+            return;
+        }
+        
+        // Inicializar módulos
+        await Promise.all([
+            userPreferences.init(),
+            workoutRecommendations.init()
+        ]);
+        
+        console.log('Módulos inicializados correctamente');
+        
+        // Iniciar AuthManager después que las preferencias estén listas
+        await authManager.init();
+        
+        // Configurar eventos de UI
+        setupUIEvents();
+        
+        // Configurar observer para cambios de autenticación
+        setupAuthStateObserver();
+        
+        // Verificar si hay un usuario autenticado
+        const currentUser = authManager.getCurrentUser();
+        if (currentUser) {
+            console.log('Usuario ya autenticado:', currentUser.displayName || currentUser.email);
+            handleUserSignIn(currentUser);
+        } else {
+            console.log('No hay usuario autenticado, mostrando pantalla de login');
+            // Mostrar pantalla de login
+            showScreen('login-screen');
+        }
+    } catch (error) {
+        console.error('Error en la inicialización:', error);
+        showErrorScreen('Error durante la inicialización: ' + error.message);
     }
 }
 
@@ -77,8 +97,16 @@ function setupUIEvents() {
     const quickWorkoutBtn = document.getElementById('quick-workout-btn');
     const quickWaterBtn = document.getElementById('quick-water-btn');
     const startWorkoutBtn = document.getElementById('start-workout-btn');
+    const retryBtn = document.getElementById('retry-btn');
     
     // === EVENTOS DE NAVEGACIÓN ===
+    // Botón para reintentar en pantalla de error
+    if (retryBtn) {
+        retryBtn.addEventListener('click', () => {
+            location.reload();
+        });
+    }
+    
     // Menú lateral
     if (menuToggleBtn) {
         menuToggleBtn.addEventListener('click', toggleSideMenu);
@@ -92,8 +120,12 @@ function setupUIEvents() {
     menuButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const screenId = btn.getAttribute('data-screen');
-            showScreen(screenId);
-            toggleSideMenu();
+            if (screenId === 'logout-btn') {
+                authManager.logout();
+            } else {
+                showScreen(screenId);
+                toggleSideMenu();
+            }
         });
     });
     
@@ -294,6 +326,7 @@ function setupUIEvents() {
                 goalOptions.forEach(opt => opt.classList.remove('active'));
                 option.classList.add('active');
                 window.selectedGoal = option.getAttribute('data-goal');
+                console.log('Objetivo seleccionado:', window.selectedGoal);
             });
         });
     }
@@ -360,10 +393,13 @@ function setupUIEvents() {
 
 // Configurar el observador de estado de autenticación
 function setupAuthStateObserver() {
+    console.log('Configurando observador de estado de autenticación');
     authManager.onAuthStateChanged(user => {
         if (user) {
+            console.log('Auth state changed: Usuario autenticado');
             handleUserSignIn(user);
         } else {
+            console.log('Auth state changed: No hay usuario autenticado');
             // Mostrar pantalla de login
             showScreen('login-screen');
         }
@@ -371,83 +407,110 @@ function setupAuthStateObserver() {
 }
 
 // Manejar inicio de sesión
-function handleUserSignIn(user) {
-    // Actualizar UI con datos del usuario
-    const userNameDisplay = document.getElementById('user-name-display');
-    const userAvatar = document.getElementById('user-avatar');
-    const menuUserAvatar = document.getElementById('menu-user-avatar');
-    const menuUserName = document.getElementById('menu-user-name');
-    const menuUserEmail = document.getElementById('menu-user-email');
+async function handleUserSignIn(user) {
+    console.log('Manejando inicio de sesión para:', user.displayName || user.email);
     
-    if (userNameDisplay) {
-        userNameDisplay.textContent = user.displayName || 'Usuario';
-    }
-    
-    if (userAvatar && user.photoURL) {
-        userAvatar.src = user.photoURL;
-    }
-    
-    if (menuUserAvatar && user.photoURL) {
-        menuUserAvatar.src = user.photoURL;
-    }
-    
-    if (menuUserName) {
-        menuUserName.textContent = user.displayName || 'Usuario';
-    }
-    
-    if (menuUserEmail) {
-        menuUserEmail.textContent = user.email || '';
-    }
-    
-    // Verificar si el usuario tiene objetivos fitness configurados
-    const fitnessGoals = userPreferences.getFitnessGoals();
-    
-    if (!fitnessGoals.primaryGoal) {
-        // Si no tiene objetivos, mostrar modal de selección
-        showScreen('home-screen');
-        setTimeout(() => {
-            toggleModal('fitness-goal-modal', true);
-        }, 500);
-    } else {
-        // Si ya tiene objetivos, ir directamente al home
-        showScreen('home-screen');
-        updateDashboard();
+    try {
+        // Asegurar que las preferencias están inicializadas
+        if (!userPreferences.preferences) {
+            await userPreferences.init();
+        }
+        
+        // Actualizar UI con datos del usuario
+        const userNameDisplay = document.getElementById('user-name-display');
+        const userAvatar = document.getElementById('user-avatar');
+        const menuUserAvatar = document.getElementById('menu-user-avatar');
+        const menuUserName = document.getElementById('menu-user-name');
+        const menuUserEmail = document.getElementById('menu-user-email');
+        
+        if (userNameDisplay) {
+            userNameDisplay.textContent = user.displayName || 'Usuario';
+        }
+        
+        if (userAvatar && user.photoURL) {
+            userAvatar.src = user.photoURL;
+        }
+        
+        if (menuUserAvatar && user.photoURL) {
+            menuUserAvatar.src = user.photoURL;
+        }
+        
+        if (menuUserName) {
+            menuUserName.textContent = user.displayName || 'Usuario';
+        }
+        
+        if (menuUserEmail) {
+            menuUserEmail.textContent = user.email || '';
+        }
+        
+        // Verificar si el usuario tiene objetivos fitness configurados
+        const fitnessGoals = userPreferences.getFitnessGoals();
+        console.log('Objetivos fitness actuales:', fitnessGoals);
+        
+        if (!fitnessGoals.primaryGoal) {
+            console.log('El usuario no tiene objetivo fitness, mostrando modal de selección');
+            // Primero ir a la pantalla home
+            showScreen('home-screen');
+            
+            // Luego mostrar el modal de selección de objetivo
+            setTimeout(() => {
+                toggleModal('fitness-goal-modal', true);
+            }, 300);
+        } else {
+            console.log('Usuario con objetivo fitness configurado, mostrando dashboard');
+            // Si ya tiene objetivos, ir directamente al home y actualizar
+            showScreen('home-screen');
+            await updateDashboard();
+        }
+    } catch (error) {
+        console.error('Error al manejar inicio de sesión:', error);
+        showNotification('Error al cargar los datos de usuario');
     }
 }
 
 // Guardar objetivo fitness seleccionado
-function saveSelectedGoal() {
+async function saveSelectedGoal() {
     if (!window.selectedGoal) {
         showNotification('Por favor, selecciona un objetivo de fitness');
         return;
     }
     
-    // Guardar el objetivo en preferencias
-    userPreferences.updateFitnessGoals({
-        primaryGoal: window.selectedGoal,
-        // Valores por defecto para otros parámetros
-        fitnessLevel: 'beginner',
-        workoutFrequency: 3,
-        targetWeight: null,
-        weeklyWeightChange: 0.5,
-        activityCalories: 300,
-        preferredWorkouts: ['cardio', 'strength']
-    });
+    console.log('Guardando objetivo fitness:', window.selectedGoal);
+    showLoading(true);
     
-    // Mostrar el objetivo seleccionado en la pantalla de fitness
-    const currentFitnessGoal = document.getElementById('current-fitness-goal');
-    if (currentFitnessGoal) {
-        currentFitnessGoal.textContent = getGoalDisplayName(window.selectedGoal);
+    try {
+        // Guardar el objetivo en preferencias
+        await userPreferences.updateFitnessGoals({
+            primaryGoal: window.selectedGoal,
+            // Valores por defecto para otros parámetros
+            fitnessLevel: 'beginner',
+            workoutFrequency: 3,
+            targetWeight: null,
+            weeklyWeightChange: 0.5,
+            activityCalories: 300,
+            preferredWorkouts: ['cardio', 'strength']
+        });
+        
+        // Mostrar el objetivo seleccionado en la pantalla de fitness
+        const currentFitnessGoal = document.getElementById('current-fitness-goal');
+        if (currentFitnessGoal) {
+            currentFitnessGoal.textContent = getGoalDisplayName(window.selectedGoal);
+        }
+        
+        // Actualizar dashboard con las recomendaciones
+        await updateDashboard();
+        
+        // Cerrar modal
+        toggleModal('fitness-goal-modal', false);
+        
+        // Mostrar notificación de éxito
+        showNotification('¡Objetivo de fitness guardado con éxito!');
+    } catch (error) {
+        console.error('Error al guardar objetivo fitness:', error);
+        showNotification('Error al guardar objetivo fitness');
+    } finally {
+        showLoading(false);
     }
-    
-    // Actualizar dashboard con las recomendaciones
-    updateDashboard();
-    
-    // Cerrar modal
-    toggleModal('fitness-goal-modal', false);
-    
-    // Mostrar notificación de éxito
-    showNotification('¡Objetivo de fitness guardado con éxito!');
 }
 
 // Obtener nombre mostrable del objetivo
@@ -466,6 +529,7 @@ function getGoalDisplayName(goalId) {
 // Actualizar dashboard con datos del usuario
 async function updateDashboard() {
     try {
+        console.log('Actualizando dashboard');
         // Obtener objetivos y preferencias
         const fitnessGoals = userPreferences.getFitnessGoals();
         const nutritionGoals = userPreferences.getNutritionGoals();
@@ -499,6 +563,8 @@ async function updateDashboard() {
         if (weeklyActivityCalories) {
             weeklyActivityCalories.textContent = '750/2100';
         }
+        
+        console.log('Dashboard actualizado correctamente');
     } catch (error) {
         console.error('Error al actualizar dashboard:', error);
     }

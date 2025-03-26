@@ -27,7 +27,7 @@ class UserPreferences {
             
             // Objetivos de fitness y entrenamiento
             fitnessGoals: {
-                primaryGoal: 'maintenance', // 'weightLoss', 'muscleGain', 'maintenance', 'athleticPerformance', 'healthImprovement'
+                primaryGoal: null, // 'weightLoss', 'muscleGain', 'maintenance', 'athleticPerformance', 'healthImprovement'
                 targetWeight: null, // kg (objetivo de peso)
                 weeklyWeightChange: 0.5, // kg por semana (para pérdida o ganancia)
                 activityCalories: 300, // calorías diarias objetivo para actividad física
@@ -67,7 +67,8 @@ class UserPreferences {
                     showCaloriesOnScan: true,
                     showNutrientsOnScan: true,
                     enableSoundFeedback: true
-                }
+                },
+                isGuestAccount: false
             },
             
             // Última actualización
@@ -676,15 +677,21 @@ class UserPreferences {
         document.dispatchEvent(event);
     }
 
-    // Restablecer a configuración por defecto
+    // Reiniciar a valores por defecto
     async resetToDefaults() {
         try {
-            this.preferences = { ...this.defaultPreferences };
-            await this.saveAllPreferences();
-            this.notifySettingsChange();
+            // Copiar las preferencias por defecto
+            this.preferences = JSON.parse(JSON.stringify(this.defaultPreferences));
+            
+            // Actualizar la fecha de última actualización
+            this.preferences.lastUpdated = Date.now();
+            
+            // Guardar en la base de datos
+            await nutriScanDB.saveUserPreferences(this.preferences);
+            
             return true;
         } catch (error) {
-            console.error('Error al restablecer configuración por defecto:', error);
+            console.error('Error al reiniciar preferencias:', error);
             return false;
         }
     }
