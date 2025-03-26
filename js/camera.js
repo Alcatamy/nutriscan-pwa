@@ -60,24 +60,34 @@ async function captureFromCamera() {
 // Procesar la imagen
 async function processImage(imageData) {
     try {
-        // Aquí iría la lógica para enviar la imagen al servidor
-        // Por ahora, simulamos una respuesta
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Verificar que imageData exista y sea una cadena válida
+        if (!imageData || typeof imageData !== 'string') {
+            throw new Error('Datos de imagen no válidos');
+        }
+
+        console.log('Procesando imagen...');
         
+        // Simulación de procesamiento con API
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Resultados simulados (en una app real, estos vendrían de un servicio de IA)
         return [
             {
+                id: 1,
                 name: 'Manzana',
                 calories: 95,
                 portion: '1 unidad (182g)',
                 protein: 0.5,
                 carbs: 25,
                 fat: 0.3,
-                fiber: 4.5
+                fiber: 4.5,
+                image: imageData
             }
         ];
     } catch (error) {
         console.error('Error al procesar la imagen:', error);
-        throw error;
+        // Re-lanzar el error para que pueda ser manejado por el llamador
+        throw new Error('No se pudo procesar la imagen: ' + error.message);
     }
 }
 
