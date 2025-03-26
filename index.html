@@ -33,123 +33,411 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <!-- Pantalla de Inicio -->
-    <div id="home-screen" class="screen active">
-        <div class="logo-container">
-            <img src="img/logo.png" alt="NutriScan Logo" class="logo">
+    <div class="app-container">
+        <!-- Header -->
+        <header>
             <h1>NutriScan</h1>
-            <p class="subtitle">Reconoce alimentos y calcula calorías al instante</p>
-        </div>
-        
-        <button id="scan-button" class="primary-button">
-            <span class="icon">📸</span>
-            Escanear Alimento
-        </button>
-        
-        <div id="install-prompt" class="install-prompt">
-            <span>Instala NutriScan para una mejor experiencia</span>
-            <button id="install-button" class="secondary-button">Instalar</button>
-        </div>
-    </div>
-    
-    <!-- Pantalla de Cámara -->
-    <div id="camera-screen" class="screen">
-        <h1>Escanear Alimento</h1>
-        <div class="camera-container">
-            <video id="camera-view" autoplay playsinline></video>
-            <canvas id="camera-canvas"></canvas>
+            <div class="header-actions">
+                <button id="settings-btn" class="icon-btn">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Navegación principal -->
+        <nav class="main-nav">
+            <ul>
+                <li><button id="scanner-nav-btn" class="nav-btn active"><i class="fas fa-camera"></i><span>Escanear</span></button></li>
+                <li><button id="barcode-nav-btn" class="nav-btn"><i class="fas fa-barcode"></i><span>Código</span></button></li>
+                <li><button id="diary-nav-btn" class="nav-btn"><i class="fas fa-utensils"></i><span>Diario</span></button></li>
+                <li><button id="stats-nav-btn" class="nav-btn"><i class="fas fa-chart-pie"></i><span>Estadísticas</span></button></li>
+                <li><button id="profile-nav-btn" class="nav-btn"><i class="fas fa-user"></i><span>Perfil</span></button></li>
+            </ul>
+        </nav>
+
+        <!-- Contenido principal -->
+        <main>
+            <!-- Pantalla de escáner de alimentos -->
+            <section id="scanner-screen" class="screen active">
+                <div class="camera-container">
+                    <video id="camera-view" autoplay playsinline></video>
+                    <canvas id="camera-canvas"></canvas>
+                    
+                    <!-- Indicador de carga para el modelo -->
+                    <div id="model-loading" class="loading-model">
+                        <div class="spinner"></div>
+                        <p>Cargando modelo de detección...</p>
+                    </div>
+                </div>
+                
+                <div class="camera-controls">
+                    <button id="capture-btn" class="primary-btn">
+                        <i class="fas fa-camera"></i> Capturar
+                    </button>
+                </div>
+                
+                <div class="detection-results"></div>
+            </section>
             
-            <!-- Indicador de carga del modelo -->
-            <div id="model-loading" class="loading-model">
-                <div class="spinner"></div>
-                <p>Cargando modelo de detección...</p>
-            </div>
+            <!-- Pantalla de escáner de códigos de barras -->
+            <section id="barcode-screen" class="screen">
+                <div class="camera-container">
+                    <video id="barcode-view" autoplay playsinline></video>
+                    <canvas id="barcode-canvas"></canvas>
+                    
+                    <div class="barcode-guide">
+                        <div class="barcode-frame"></div>
+                        <p>Apunta al código de barras</p>
+                    </div>
+                </div>
+                
+                <div class="camera-controls">
+                    <button id="manual-barcode-btn" class="secondary-btn">
+                        <i class="fas fa-keyboard"></i> Introducir manualmente
+                    </button>
+                </div>
+            </section>
+            
+            <!-- Pantalla de resultado de reconocimiento -->
+            <section id="result-screen" class="screen">
+                <div class="result-container">
+                    <div class="result-image-container">
+                        <img id="captured-image" src="" alt="Imagen capturada">
+                    </div>
+                    
+                    <div class="food-info">
+                        <h2 id="food-name">Nombre del alimento</h2>
+                        <div class="nutrition-summary">
+                            <div class="nutrition-item">
+                                <span class="nutrition-value" id="calories-value">--</span>
+                                <span class="nutrition-label">Calorías</span>
+                            </div>
+                            <div class="nutrition-item">
+                                <span class="nutrition-value" id="protein-value">--</span>
+                                <span class="nutrition-label">Proteína</span>
+                            </div>
+                            <div class="nutrition-item">
+                                <span class="nutrition-value" id="carbs-value">--</span>
+                                <span class="nutrition-label">Carbohidratos</span>
+                            </div>
+                            <div class="nutrition-item">
+                                <span class="nutrition-value" id="fat-value">--</span>
+                                <span class="nutrition-label">Grasas</span>
+                            </div>
+                        </div>
+                        
+                        <div class="food-details" id="food-details">
+                            <!-- Detalles del alimento -->
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button id="add-to-diary-btn" class="primary-btn">
+                                <i class="fas fa-plus"></i> Añadir al diario
+                            </button>
+                            <button id="scan-again-btn" class="secondary-btn">
+                                <i class="fas fa-redo"></i> Escanear otro
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Pantalla de información del producto escaneado por código de barras -->
+            <section id="product-info-screen" class="screen">
+                <div class="product-container">
+                    <div class="product-header">
+                        <div class="product-image-container">
+                            <img id="product-image" src="" alt="Imagen del producto">
+                        </div>
+                        <div class="product-title">
+                            <h2 id="product-name">Nombre del producto</h2>
+                            <p id="product-brand">Marca</p>
+                        </div>
+                    </div>
+                    
+                    <div class="product-details">
+                        <div class="detail-section">
+                            <h3>Información nutricional</h3>
+                            <div id="product-calories" class="calories-badge">-- kcal</div>
+                            <div id="product-nutrients" class="nutrients-container">
+                                <!-- Información nutricional -->
+                            </div>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h3>Alérgenos e información dietética</h3>
+                            <div id="product-allergens" class="allergens-container">
+                                <!-- Información de alérgenos -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button id="add-product-to-diary-btn" class="primary-btn">
+                            <i class="fas fa-plus"></i> Añadir al diario
+                        </button>
+                        <button id="scan-another-btn" class="secondary-btn">
+                            <i class="fas fa-barcode"></i> Escanear otro
+                        </button>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Pantalla para añadir alimento al registro diario -->
+            <section id="add-to-log-screen" class="screen">
+                <div class="add-to-log-container">
+                    <h2>Añadir a diario</h2>
+                    <p>Añadir <span id="log-food-name">alimento</span> a:</p>
+                    
+                    <div class="meal-type-options">
+                        <button class="meal-type-btn" data-meal-type="breakfast">
+                            <i class="fas fa-coffee"></i>
+                            <span>Desayuno</span>
+                        </button>
+                        <button class="meal-type-btn" data-meal-type="lunch">
+                            <i class="fas fa-hamburger"></i>
+                            <span>Almuerzo</span>
+                        </button>
+                        <button class="meal-type-btn" data-meal-type="dinner">
+                            <i class="fas fa-utensils"></i>
+                            <span>Cena</span>
+                        </button>
+                        <button class="meal-type-btn" data-meal-type="snack">
+                            <i class="fas fa-cookie"></i>
+                            <span>Snack</span>
+                        </button>
+                    </div>
+                    
+                    <div class="portion-selector">
+                        <label for="portion-size">Tamaño de porción:</label>
+                        <div class="portion-controls">
+                            <button class="portion-btn" data-action="decrease">-</button>
+                            <input type="number" id="portion-size" value="1" min="0.25" step="0.25">
+                            <button class="portion-btn" data-action="increase">+</button>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button id="cancel-add-log-btn" class="secondary-btn">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Pantalla de diario alimenticio -->
+            <section id="food-log-screen" class="screen">
+                <div class="date-selector">
+                    <button id="prev-day-btn" class="icon-btn">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div id="current-date">Hoy</div>
+                    <button id="next-day-btn" class="icon-btn">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                
+                <div id="daily-log-container" class="daily-log">
+                    <!-- El contenido del registro diario se generará dinámicamente -->
+                </div>
+                
+                <div class="add-food-fab">
+                    <button id="add-food-btn" class="fab-btn">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </section>
+            
+            <!-- Pantalla de estadísticas -->
+            <section id="stats-screen" class="screen">
+                <div class="stats-container">
+                    <div class="stats-header">
+                        <h2>Estadísticas</h2>
+                        <div class="period-selector">
+                            <button data-period="7" class="period-btn active">Semana</button>
+                            <button data-period="30" class="period-btn">Mes</button>
+                            <button data-period="90" class="period-btn">3 Meses</button>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-section">
+                        <h3>Consumo de calorías</h3>
+                        <div class="chart-container" id="calories-chart">
+                            <!-- Gráfico de calorías -->
+                        </div>
+                        <div class="stats-summary" id="calories-summary">
+                            <!-- Resumen de calorías -->
+                        </div>
+                    </div>
+                    
+                    <div class="stats-section">
+                        <h3>Distribución de macronutrientes</h3>
+                        <div class="chart-container" id="macros-chart">
+                            <!-- Gráfico de macronutrientes -->
+                        </div>
+                    </div>
+                    
+                    <div class="stats-section">
+                        <h3>Categorías de alimentos</h3>
+                        <div class="chart-container" id="categories-chart">
+                            <!-- Gráfico de categorías -->
+                        </div>
+                    </div>
+                    
+                    <div class="stats-section">
+                        <h3>Tendencias y análisis</h3>
+                        <div id="trends-analysis" class="trends-container">
+                            <!-- Análisis de tendencias -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Pantalla de perfil de usuario -->
+            <section id="profile-screen" class="screen">
+                <div class="profile-container">
+                    <div class="profile-header">
+                        <div class="profile-avatar">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <div class="profile-info">
+                            <h2 id="profile-name">Mi Perfil</h2>
+                            <button id="edit-profile-btn" class="text-btn">
+                                <i class="fas fa-edit"></i> Editar perfil
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-section">
+                        <h3>Objetivos nutricionales</h3>
+                        <div class="goals-container" id="nutrition-goals">
+                            <!-- Objetivos nutricionales -->
+                        </div>
+                        <button id="edit-goals-btn" class="secondary-btn">
+                            <i class="fas fa-sliders-h"></i> Ajustar objetivos
+                        </button>
+                    </div>
+                    
+                    <div class="profile-section">
+                        <h3>Preferencias dietéticas</h3>
+                        <div class="diet-preferences" id="diet-preferences">
+                            <!-- Preferencias dietéticas -->
+                        </div>
+                        <button id="edit-diet-btn" class="secondary-btn">
+                            <i class="fas fa-edit"></i> Editar preferencias
+                        </button>
+                    </div>
+                    
+                    <div class="profile-section">
+                        <h3>Alérgenos</h3>
+                        <div class="allergens-list" id="user-allergens">
+                            <!-- Lista de alérgenos -->
+                        </div>
+                        <button id="edit-allergens-btn" class="secondary-btn">
+                            <i class="fas fa-exclamation-triangle"></i> Gestionar alérgenos
+                        </button>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Pantalla de configuración -->
+            <section id="settings-screen" class="screen">
+                <div class="settings-container">
+                    <h2>Configuración</h2>
+                    
+                    <div class="settings-section">
+                        <h3>Apariencia</h3>
+                        <div class="setting-item">
+                            <label for="theme-selector">Tema</label>
+                            <select id="theme-selector" class="setting-control">
+                                <option value="light">Claro</option>
+                                <option value="dark">Oscuro</option>
+                                <option value="system">Sistema</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>Notificaciones</h3>
+                        <div class="setting-item">
+                            <label for="notifications-toggle">Activar notificaciones</label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="notifications-toggle" checked>
+                                <span class="toggle-slider"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="meal-reminders-toggle">Recordatorios de comidas</label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="meal-reminders-toggle" checked>
+                                <span class="toggle-slider"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>Escáner</h3>
+                        <div class="setting-item">
+                            <label for="auto-detection-toggle">Detección automática</label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="auto-detection-toggle" checked>
+                                <span class="toggle-slider"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="sound-feedback-toggle">Retroalimentación sonora</label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="sound-feedback-toggle" checked>
+                                <span class="toggle-slider"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>Datos</h3>
+                        <button id="export-data-btn" class="secondary-btn">
+                            <i class="fas fa-download"></i> Exportar datos
+                        </button>
+                        <button id="import-data-btn" class="secondary-btn">
+                            <i class="fas fa-upload"></i> Importar datos
+                        </button>
+                        <button id="clear-data-btn" class="danger-btn">
+                            <i class="fas fa-trash"></i> Borrar todos los datos
+                        </button>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>Acerca de</h3>
+                        <p>NutriScan v1.0</p>
+                        <p>Desarrollado por Adrian Alcaide</p>
+                        <button id="feedback-btn" class="text-btn">
+                            <i class="fas fa-comment"></i> Enviar comentarios
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Mensaje de notificación -->
+        <div id="notification" class="notification">
+            <span id="notification-text"></span>
         </div>
-        <button id="capture-button" class="primary-button">
-            <span class="button-icon">📸</span>
-            Capturar
-        </button>
     </div>
-    
-    <!-- Pantalla de Carga -->
-    <div id="loading-screen" class="screen">
-        <div class="loading-container">
-            <div class="spinner"></div>
-            <p>Analizando alimento...</p>
-        </div>
-    </div>
-    
-    <!-- Pantalla de Resultados -->
-    <div id="results-screen" class="screen">
-        <div class="results-image-container">
-            <img id="captured-image" alt="Alimento capturado">
-        </div>
-        
-        <div class="food-list" id="food-list">
-            <!-- Los resultados se insertarán aquí dinámicamente -->
-        </div>
-        
-        <button id="scan-again-button" class="primary-button">
-            <span class="icon">🔄</span>
-            Escanear Otro
-        </button>
-    </div>
-    
-    <!-- Pantalla de Detalles -->
-    <div id="details-screen" class="screen">
-        <div class="details-header">
-            <h2 id="food-name">Nombre del Alimento</h2>
-            <div class="calories" id="food-calories">0 kcal</div>
-            <div class="portion" id="food-portion">Porción</div>
-        </div>
-        
-        <div class="details-card">
-            <h3>Información Nutricional</h3>
-            <div class="nutrient-row">
-                <span class="nutrient-name">Proteínas</span>
-                <span class="nutrient-value" id="protein-value">0g</span>
-            </div>
-            <div class="nutrient-row">
-                <span class="nutrient-name">Carbohidratos</span>
-                <span class="nutrient-value" id="carbs-value">0g</span>
-            </div>
-            <div class="nutrient-row">
-                <span class="nutrient-name">Grasas</span>
-                <span class="nutrient-value" id="fat-value">0g</span>
-            </div>
-            <div class="nutrient-row">
-                <span class="nutrient-name">Fibra</span>
-                <span class="nutrient-value" id="fiber-value">0g</span>
-            </div>
-        </div>
-        
-        <div class="details-card">
-            <h3>Recomendaciones</h3>
-            <p id="recommendations"></p>
-        </div>
-        
-        <button id="back-to-results-button" class="secondary-button">
-            Volver a Resultados
-        </button>
-    </div>
-    
+
     <!-- Scripts -->
-    <script src="js/camera.js"></script>
-    <script src="js/food-recognition.js"></script>
-    <script src="js/app.js"></script>
-    
-    <!-- Service Worker -->
+    <script type="module" src="js/app.js"></script>
     <script>
+        // Registrar Service Worker para PWA
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./service-worker.js')
-                    .then(registration => {
-                        console.log('Service Worker registrado con éxito:', registration.scope);
-                    })
-                    .catch(error => {
-                        console.log('Error al registrar el Service Worker:', error);
-                    });
-            });
+            navigator.serviceWorker.register('service-worker.js')
+                .then(function(registration) {
+                    console.log('Service Worker registrado con éxito:', registration);
+                })
+                .catch(function(error) {
+                    console.log('Error al registrar el Service Worker:', error);
+                });
         }
     </script>
 </body>

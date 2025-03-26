@@ -528,3 +528,770 @@ h3 {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* Contenedor principal de la aplicación */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Header */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: var(--primary-color);
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: white;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Navegación principal */
+.main-nav {
+  background-color: white;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  z-index: 100;
+}
+
+.main-nav ul {
+  display: flex;
+  justify-content: space-around;
+  list-style: none;
+  padding: 0.5rem 0;
+}
+
+.nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  padding: 0.5rem;
+  width: 100%;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.nav-btn i {
+  font-size: 1.2rem;
+  margin-bottom: 0.25rem;
+}
+
+.nav-btn span {
+  font-size: 0.75rem;
+}
+
+.nav-btn.active {
+  color: var(--primary-color);
+}
+
+/* Contenido principal */
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 4rem; /* Espacio para la navegación */
+}
+
+/* Botones */
+.primary-btn, .secondary-btn, .danger-btn, .text-btn, .icon-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.primary-btn {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.primary-btn:hover {
+  background-color: var(--primary-dark);
+}
+
+.secondary-btn {
+  background-color: var(--surface-color);
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+}
+
+.secondary-btn:hover {
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+.danger-btn {
+  background-color: var(--error-color);
+  color: white;
+}
+
+.danger-btn:hover {
+  background-color: #d32f2f;
+}
+
+.text-btn {
+  background: none;
+  color: var(--primary-color);
+  padding: 0.5rem;
+}
+
+.text-btn:hover {
+  text-decoration: underline;
+}
+
+.icon-btn {
+  background: none;
+  color: inherit;
+  width: 40px;
+  height: 40px;
+  padding: 0.5rem;
+  border-radius: 50%;
+}
+
+.icon-btn:hover {
+  background-color: rgba(0,0,0,0.05);
+}
+
+/* Pantalla de diario alimenticio */
+.date-selector {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: var(--surface-color);
+  border-radius: 8px;
+  margin: 1rem;
+}
+
+#current-date {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.daily-log {
+  padding: 0 1rem;
+}
+
+.calories-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.calories-progress {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin-bottom: 1rem;
+}
+
+.progress-ring {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  border: 8px solid var(--primary-light);
+  border-radius: 50%;
+  padding: 4px;
+}
+
+.calories-number {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.calories-unit {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.macros-summary {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.macro-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.macro-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.macro-value {
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.meal-section {
+  margin-bottom: 2rem;
+}
+
+.meal-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  color: var(--primary-dark);
+}
+
+.meal-items {
+  list-style: none;
+  padding: 0;
+}
+
+.food-log-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem;
+  margin-bottom: 0.5rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.food-log-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.food-log-name {
+  font-weight: 500;
+}
+
+.food-log-calories {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.remove-food-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  padding: 0.5rem;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.remove-food-btn:hover {
+  color: var(--error-color);
+}
+
+.add-food-fab {
+  position: fixed;
+  bottom: 5rem;
+  right: 1.5rem;
+  z-index: 90;
+}
+
+.fab-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
+
+.fab-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Pantalla para añadir alimento al diario */
+.add-to-log-container {
+  padding: 1.5rem;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  margin: 1rem;
+  max-width: 500px;
+  align-self: center;
+  width: 100%;
+}
+
+.add-to-log-container h2 {
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+}
+
+.meal-type-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.meal-type-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  background-color: var(--surface-color);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.meal-type-btn i {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--primary-color);
+}
+
+.meal-type-btn:hover {
+  border-color: var(--primary-color);
+}
+
+.portion-selector {
+  margin: 1.5rem 0;
+}
+
+.portion-controls {
+  display: flex;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.portion-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--surface-color);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.portion-selector input {
+  width: 60px;
+  text-align: center;
+  padding: 0.5rem;
+  margin: 0 0.5rem;
+  border: 1px solid var(--divider-color);
+  border-radius: 4px;
+}
+
+/* Pantalla de estadísticas */
+.stats-container {
+  padding: 1rem;
+}
+
+.stats-header {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1.5rem;
+}
+
+.period-selector {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.period-btn {
+  background-color: var(--surface-color);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.period-btn.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.stats-section {
+  background-color: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.stats-section h3 {
+  margin-bottom: 1rem;
+  color: var(--primary-dark);
+  font-size: 1.2rem;
+}
+
+.chart-container {
+  height: 250px;
+  margin-bottom: 1rem;
+}
+
+.stats-summary {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.trends-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Pantalla de perfil de usuario */
+.profile-container {
+  padding: 1rem;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.profile-avatar {
+  font-size: 4rem;
+  color: var(--primary-color);
+  margin-right: 1.5rem;
+}
+
+.profile-info {
+  flex: 1;
+}
+
+.profile-info h2 {
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.profile-section {
+  background-color: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.profile-section h3 {
+  margin-bottom: 1rem;
+  color: var(--primary-dark);
+  font-size: 1.2rem;
+}
+
+.goals-container, .diet-preferences, .allergens-list {
+  margin-bottom: 1.5rem;
+}
+
+/* Pantalla de configuración */
+.settings-container {
+  padding: 1rem;
+}
+
+.settings-section {
+  background-color: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.settings-section h3 {
+  margin-bottom: 1rem;
+  color: var(--primary-dark);
+  font-size: 1.2rem;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--divider-color);
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.setting-control {
+  padding: 0.5rem;
+  border: 1px solid var(--divider-color);
+  border-radius: 4px;
+  min-width: 120px;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--divider-color);
+  border-radius: 34px;
+  transition: 0.4s;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  border-radius: 50%;
+  transition: 0.4s;
+}
+
+input:checked + .toggle-slider {
+  background-color: var(--primary-color);
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(26px);
+}
+
+/* Notificación */
+.notification {
+  position: fixed;
+  bottom: 4.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 0.8rem 1.5rem;
+  border-radius: 25px;
+  font-size: 0.9rem;
+  z-index: 1000;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.notification.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* Estilos específicos para la pantalla de escáner de códigos de barras */
+.barcode-guide {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.barcode-frame {
+  width: 80%;
+  height: 180px;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
+  position: relative;
+}
+
+.barcode-guide p {
+  color: white;
+  margin-top: 1rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Pantalla de información del producto */
+.product-container {
+  padding: 1rem;
+}
+
+.product-header {
+  display: flex;
+  margin-bottom: 1.5rem;
+}
+
+.product-image-container {
+  width: 100px;
+  height: 100px;
+  margin-right: 1rem;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--surface-color);
+}
+
+.product-image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.product-title {
+  flex: 1;
+}
+
+.product-title h2 {
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.product-title p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.detail-section {
+  background-color: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.calories-badge {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background-color: var(--primary-light);
+  color: var(--primary-dark);
+  border-radius: 20px;
+  font-weight: bold;
+  margin: 0.5rem 0 1rem;
+}
+
+.nutrients-list, .allergens-list {
+  list-style: none;
+  padding: 0;
+}
+
+.nutrients-list li, .allergens-list li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--divider-color);
+}
+
+.nutrients-list li:last-child, .allergens-list li:last-child {
+  border-bottom: none;
+}
+
+.diet-warnings {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: #fff3cd;
+  border-left: 4px solid #ffc107;
+  border-radius: 4px;
+}
+
+.warning-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.warning-item:last-child {
+  margin-bottom: 0;
+}
+
+.warning-item i {
+  color: #ffc107;
+  margin-right: 0.5rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+/* Media queries para responsividad */
+@media (min-width: 768px) {
+  .add-to-log-container {
+    margin: 2rem auto;
+  }
+  
+  .meal-type-options {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .stats-container, .profile-container, .settings-container, .product-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 400px) {
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .meal-type-options {
+    grid-template-columns: 1fr;
+  }
+}
