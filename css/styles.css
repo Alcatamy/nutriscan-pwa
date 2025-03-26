@@ -994,307 +994,216 @@ main {
 
 /* Pantalla de perfil de usuario */
 .profile-container {
-  padding: 1rem;
-}
-
-.profile-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.profile-avatar {
-  font-size: 4rem;
-  color: var(--primary-color);
-  margin-right: 1.5rem;
-}
-
-.profile-info {
-  flex: 1;
-}
-
-.profile-info h2 {
-  margin-bottom: 0.5rem;
-  color: var(--text-primary);
+  padding: 15px;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .profile-section {
-  background-color: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  overflow: hidden;
 }
 
-.profile-section h3 {
-  margin-bottom: 1rem;
-  color: var(--primary-dark);
-  font-size: 1.2rem;
-}
-
-.goals-container, .diet-preferences, .allergens-list {
-  margin-bottom: 1.5rem;
-}
-
-/* Pantalla de configuración */
-.settings-container {
-  padding: 1rem;
-}
-
-.settings-section {
-  background-color: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.settings-section h3 {
-  margin-bottom: 1rem;
-  color: var(--primary-dark);
-  font-size: 1.2rem;
-}
-
-.setting-item {
+.profile-header {
+  padding: 15px;
+  border-bottom: 1px solid #eee;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--divider-color);
 }
 
-.setting-item:last-child {
-  border-bottom: none;
-  margin-bottom: 0;
-  padding-bottom: 0;
+.profile-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #333;
 }
 
-.setting-control {
-  padding: 0.5rem;
-  border: 1px solid var(--divider-color);
-  border-radius: 4px;
-  min-width: 120px;
-}
-
-/* Toggle Switch */
-.toggle-switch {
-  position: relative;
-  display: inline-block;
-  width: 50px;
-  height: 24px;
-}
-
-.toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.toggle-slider {
-  position: absolute;
+.edit-btn {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-size: 1rem;
   cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--divider-color);
-  border-radius: 34px;
-  transition: 0.4s;
-}
-
-.toggle-slider:before {
-  position: absolute;
-  content: "";
-  height: 20px;
-  width: 20px;
-  left: 2px;
-  bottom: 2px;
-  background-color: white;
+  padding: 5px;
   border-radius: 50%;
-  transition: 0.4s;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
 }
 
-input:checked + .toggle-slider {
-  background-color: var(--primary-color);
+.edit-btn:hover {
+  background-color: rgba(var(--primary-rgb), 0.1);
 }
 
-input:checked + .toggle-slider:before {
-  transform: translateX(26px);
+.profile-content {
+  padding: 15px;
 }
 
-/* Notificación */
-.notification {
-  position: fixed;
-  bottom: -100px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 12px 20px;
-  border-radius: 8px;
-  z-index: 1010;
-  transition: bottom 0.3s ease;
-  max-width: 90%;
+.profile-avatar {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.profile-avatar i {
+  font-size: 64px;
+  color: #ccc;
+  background-color: #f5f5f5;
+  border-radius: 50%;
+  padding: 10px;
+}
+
+.profile-info {
   text-align: center;
 }
 
-.notification.visible {
-  bottom: 20px;
+.profile-info h4 {
+  margin: 0 0 10px 0;
+  font-size: 1.2rem;
 }
 
-/* Estilos específicos para la pantalla de escáner de códigos de barras */
-.barcode-guide {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+.profile-info p {
+  margin: 5px 0;
+  color: #666;
+}
+
+/* Estilos para resumen de objetivos */
+.goal-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.goal-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  pointer-events: none;
+  gap: 12px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
 }
 
-.barcode-frame {
-  width: 80%;
-  height: 180px;
-  border: 2px solid rgba(255, 255, 255, 0.8);
-  border-radius: 10px;
-  position: relative;
-}
-
-.barcode-guide p {
-  color: white;
-  margin-top: 1rem;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-}
-
-/* Pantalla de información del producto */
-.product-container {
-  padding: 1rem;
-}
-
-.product-header {
+.goal-item i {
+  font-size: 24px;
+  color: var(--primary-color);
+  background-color: rgba(var(--primary-rgb), 0.1);
+  padding: 10px;
+  border-radius: 50%;
   display: flex;
-  margin-bottom: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
 }
 
-.product-image-container {
-  width: 100px;
-  height: 100px;
-  margin-right: 1rem;
-  border-radius: 8px;
-  overflow: hidden;
-  background-color: var(--surface-color);
+.goal-item small {
+  color: #666;
+  font-size: 0.8rem;
+  display: block;
+  margin-bottom: 2px;
 }
 
-.product-image-container img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+.goal-item h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
 }
 
-.product-title {
-  flex: 1;
+/* Estilos para resumen de nutrición */
+.nutrition-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
 }
 
-.product-title h2 {
-  margin-bottom: 0.5rem;
-  color: var(--text-primary);
+.nutrition-item {
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  text-align: center;
 }
 
-.product-title p {
-  color: var(--text-secondary);
+.nutrition-label {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.nutrition-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Estilos para etiquetas de dieta y alérgenos */
+.diet-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.diet-tag {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  padding: 6px 12px;
+  border-radius: 16px;
   font-size: 0.9rem;
 }
 
-.detail-section {
-  background-color: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+.allergens-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.calories-badge {
-  display: inline-block;
-  padding: 0.5rem 1rem;
-  background-color: var(--primary-light);
-  color: var(--primary-dark);
-  border-radius: 20px;
-  font-weight: bold;
-  margin: 0.5rem 0 1rem;
-}
-
-.nutrients-list, .allergens-list {
-  list-style: none;
-  padding: 0;
-}
-
-.nutrients-list li, .allergens-list li {
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--divider-color);
-}
-
-.nutrients-list li:last-child, .allergens-list li:last-child {
-  border-bottom: none;
-}
-
-.diet-warnings {
-  margin-bottom: 1rem;
-  padding: 1rem;
-  background-color: #fff3cd;
-  border-left: 4px solid #ffc107;
-  border-radius: 4px;
-}
-
-.warning-item {
+.allergen-tag {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.9rem;
   display: flex;
   align-items: center;
-  margin-bottom: 0.5rem;
+  gap: 5px;
 }
 
-.warning-item:last-child {
-  margin-bottom: 0;
+.allergen-tag i {
+  font-size: 0.8rem;
 }
 
-.warning-item i {
-  color: #ffc107;
-  margin-right: 0.5rem;
-}
-
-.action-buttons {
+/* Botón de cerrar sesión */
+.logout-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #f5f5f5;
+  border: none;
+  border-radius: 8px;
+  color: #d32f2f;
+  font-size: 1rem;
   display: flex;
-  gap: 1rem;
-  margin-top: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  transition: background-color 0.2s;
 }
 
-/* Media queries para responsividad */
-@media (min-width: 768px) {
-  .add-to-log-container {
-    margin: 2rem auto;
-  }
-  
-  .meal-type-options {
-    grid-template-columns: repeat(4, 1fr);
-  }
-  
-  .stats-container, .profile-container, .settings-container, .product-container {
-    max-width: 800px;
-    margin: 0 auto;
-  }
+.logout-btn:hover {
+  background-color: #ffebee;
 }
 
-@media (max-width: 400px) {
-  .action-buttons {
-    flex-direction: column;
-  }
-  
-  .meal-type-options {
+/* Media queries para diseño responsivo */
+@media (max-width: 600px) {
+  .goal-summary,
+  .nutrition-summary {
     grid-template-columns: 1fr;
   }
 }
@@ -1876,7 +1785,7 @@ input:checked + .toggle-slider:before {
     right: 0;
     bottom: 0;
     background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1001;
+    z-index: 1000;
     display: none;
 }
 
@@ -1889,16 +1798,17 @@ input:checked + .toggle-slider:before {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+    background-color: #fff;
+    border-radius: 8px;
+    z-index: 1010;
     width: 90%;
     max-width: 500px;
-    background-color: white;
-    border-radius: 12px;
-    z-index: 1002;
-    display: none;
+    max-height: 85vh;
     overflow: hidden;
-    max-height: 90vh;
     display: flex;
     flex-direction: column;
+    display: none;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 .modal.active {
@@ -1906,15 +1816,18 @@ input:checked + .toggle-slider:before {
 }
 
 .modal-header {
-    padding: 16px;
+    padding: 15px 20px;
     border-bottom: 1px solid #eee;
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
 }
 
 .modal-header h3 {
     margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
 }
 
 .modal-close-btn {
@@ -1922,113 +1835,205 @@ input:checked + .toggle-slider:before {
     border: none;
     font-size: 1.2rem;
     cursor: pointer;
-    color: #666;
+    color: #999;
+}
+
+.modal-close-btn:hover {
+    color: #333;
 }
 
 .modal-content {
-    padding: 16px;
+    padding: 20px;
     overflow-y: auto;
     flex: 1;
 }
 
 .modal-footer {
-    padding: 16px;
+    padding: 15px 20px;
     border-top: 1px solid #eee;
     display: flex;
     justify-content: flex-end;
-    gap: 12px;
+    gap: 10px;
+}
+
+/* Estilos para formularios en modales */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #555;
+}
+
+.form-group input, 
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.form-row {
+    display: flex;
+    gap: 15px;
+}
+
+.form-group.half {
+    flex: 1;
+}
+
+/* Estilos para el modal de objetivos */
+.goal-section {
+    margin-bottom: 25px;
+}
+
+.goal-section h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #444;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
 }
 
 .goal-options {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
 }
 
 .goal-option {
-    padding: 16px;
+    background-color: #f7f7f7;
+    border: 2px solid #f1f1f1;
     border-radius: 8px;
-    border: 2px solid #eee;
+    padding: 12px;
     cursor: pointer;
-    transition: border-color 0.2s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    transition: all 0.2s;
     text-align: center;
 }
 
-.goal-option:hover {
-    border-color: #4CAF50;
-}
-
-.goal-option.active {
-    border-color: #4CAF50;
-    background-color: #e8f5e9;
+.goal-option.selected {
+    border-color: var(--primary-color);
+    background-color: rgba(var(--primary-rgb), 0.05);
 }
 
 .goal-option i {
-    font-size: 2rem;
-    color: #4CAF50;
-    margin-bottom: 12px;
+    font-size: 24px;
+    margin-bottom: 10px;
+    color: var(--primary-color);
 }
 
 .goal-option h4 {
-    margin: 0 0 8px 0;
+    margin: 5px 0;
+    font-size: 1rem;
 }
 
 .goal-option p {
-    margin: 0;
-    font-size: 0.9rem;
-    color: #666;
+    margin: 5px 0 0;
+    font-size: 0.8rem;
+    color: #777;
 }
 
-/* Media queries para diseño responsivo */
-@media (min-width: 768px) {
-    .summary-cards {
-        flex-direction: row;
-    }
-    
-    .summary-card {
-        flex: 1;
-    }
-    
-    .action-buttons {
-        grid-template-columns: repeat(4, 1fr);
-    }
-    
-    .workout-recommendations {
-        flex-direction: row;
-        flex-wrap: wrap;
-    }
-    
-    .workout-recommendation {
-        width: calc(50% - 8px);
-    }
+/* Estilos para sliders de macronutrientes */
+.macro-sliders {
+    margin-bottom: 15px;
 }
 
-/* ==== PANTALLAS DE CARGA Y ERROR ==== */
-.error-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    padding: 20px;
+.macro-sliders .form-group {
+    margin-bottom: 20px;
+}
+
+input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 5px;
+    background: #eee;
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+input[type="range"]:active::-webkit-slider-thumb {
+    box-shadow: 0 0 0 8px rgba(var(--primary-rgb), 0.2);
+}
+
+.macro-total {
+    text-align: right;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.macro-total.warning {
+    color: var(--error-color);
+}
+
+/* Estilos específicos para los sliders de macronutrientes */
+#protein-percent::-webkit-slider-thumb {
+    background: #3498db; /* Azul para proteínas */
+}
+
+#carbs-percent::-webkit-slider-thumb {
+    background: #e67e22; /* Naranja para carbohidratos */
+}
+
+#fat-percent::-webkit-slider-thumb {
+    background: #e74c3c; /* Rojo para grasas */
+}
+
+/* Toast notifications */
+.toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #4CAF50;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 4px;
+    z-index: 2000;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    max-width: 80%;
     text-align: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
-.error-icon {
-    font-size: 64px;
-    color: #f44336;
-    margin-bottom: 16px;
+.toast.error {
+    background-color: #f44336;
 }
 
-.error-container h2 {
-    margin-bottom: 12px;
-    color: #333;
+.toast.warning {
+    background-color: #ff9800;
 }
 
-.error-container p {
-    margin-bottom: 24px;
-    color: #666;
+.toast.info {
+    background-color: #2196F3;
+}
+
+.toast.show {
+    opacity: 1;
 }
