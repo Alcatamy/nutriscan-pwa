@@ -25,6 +25,17 @@ class UserPreferences {
                 waterGoal: 2000 // ml
             },
             
+            // Objetivos de fitness y entrenamiento
+            fitnessGoals: {
+                primaryGoal: 'maintenance', // 'weightLoss', 'muscleGain', 'maintenance', 'athleticPerformance', 'healthImprovement'
+                targetWeight: null, // kg (objetivo de peso)
+                weeklyWeightChange: 0.5, // kg por semana (para pérdida o ganancia)
+                activityCalories: 300, // calorías diarias objetivo para actividad física
+                workoutFrequency: 3, // entrenamientos por semana
+                preferredWorkouts: [], // tipos de entrenamientos preferidos: 'cardio', 'strength', 'flexibility', 'hiit', etc.
+                fitnessLevel: 'beginner', // 'beginner', 'intermediate', 'advanced'
+            },
+            
             // Preferencias dietéticas
             dietaryPreferences: {
                 vegetarian: false,
@@ -241,6 +252,263 @@ class UserPreferences {
     // Obtener objetivos nutricionales
     getNutritionGoals() {
         return { ...this.preferences.nutritionGoals };
+    }
+
+    // Actualizar objetivos de fitness
+    async updateFitnessGoals(goals) {
+        try {
+            this.preferences.fitnessGoals = {
+                ...this.preferences.fitnessGoals,
+                ...goals
+            };
+            
+            // Si cambia el objetivo primario, ajustar otros valores automáticamente
+            if (goals.primaryGoal) {
+                this.adjustGoalsByFitnessPriority(goals.primaryGoal);
+            }
+            
+            await this.saveAllPreferences();
+            return true;
+        } catch (error) {
+            console.error('Error al actualizar objetivos de fitness:', error);
+            return false;
+        }
+    }
+
+    // Ajustar objetivos basados en la prioridad de fitness
+    adjustGoalsByFitnessPriority(primaryGoal) {
+        const profile = this.preferences.profile;
+        // Si no hay datos suficientes de perfil, no ajustar
+        if (!profile.weight || !profile.height || !profile.age) return;
+        
+        // Ajustar objetivos de calorías según el objetivo primario
+        switch (primaryGoal) {
+            case 'weightLoss':
+                // Déficit calórico para pérdida de peso (15-20% menos)
+                const deficitPercentage = 0.2; // 20% de déficit
+                this.preferences.nutritionGoals.calorieGoal = Math.round(
+                    this.preferences.nutritionGoals.calorieGoal * (1 - deficitPercentage)
+                );
+                // Ajustar macronutrientes: más proteína, menos carbos
+                this.preferences.nutritionGoals.proteinGoal = Math.round((this.preferences.nutritionGoals.calorieGoal * 0.3) / 4);
+                this.preferences.nutritionGoals.carbsGoal = Math.round((this.preferences.nutritionGoals.calorieGoal * 0.4) / 4);
+                this.preferences.nutritionGoals.fatGoal = Math.round((this.preferences.nutritionGoals.calorieGoal * 0.3) / 9);
+                // Ajustar metas de actividad
+                this.preferences.fitnessGoals.activityCalories = 400;
+                this.preferences.fitnessGoals.workoutFrequency = 4;
+                // Entrenamientos recomendados
+                this.preferences.fitnessGoals.preferredWorkouts = ['cardio', 'hiit', 'strength'];
+                break;
+                
+            case 'muscleGain':
+                // Superávit calórico para ganancia muscular (10-15% más)
+                const surplusPercentage = 0.15; // 15% de superávit
+                this.preferences.nutritionGoals.calorieGoal = Math.round(
+                    this.preferences.nutritionGoals.calorieGoal * (1 + surplusPercentage)
+                );
+                // Más proteína y carbohidratos para construcción muscular
+                this.preferences.nutritionGoals.proteinGoal = Math.round((this.preferences.nutritionGoals.calorieGoal * 0.25) / 4);
+                this.preferences.nutritionGoals.carbsGoal = Math.round((this.preferences.nutritionGoals.calorieGoal * 0.55) / 4);
+                this.preferences.nutritionGoals.fatGoal = Math.round((this.preferences.nutritionGoals.calorieGoal * 0.2) / 9);
+                // Ajustar metas de actividad
+                this.preferences.fitnessGoals.activityCalories = 300;
+                this.preferences.fitnessGoals.workoutFrequency = 4;
+                // Entrenamientos recomendados
+                this.preferences.fitnessGoals.preferredWorkouts = ['strength', 'hypertrophy', 'recovery'];
+                break;
+                
+            case 'maintenance':
+                // Mantener calorías actuales según calculado por TMB y nivel de actividad
+                // Sin ajustes a las calorías calculadas por TMB
+                // Distribución equilibrada de macronutrientes
+                this.preferences.nutritionGoals.proteinGoal = Math.round((this.preferences.nutritionGoals.calorieGoal * 0.2) / 4);
+                this.preferences.nutritionGoals.carbsGoal = Math.round((this.preferences.nutritionGoals.calorieGoal * 0.5) / 4);
+                this.preferences.nutritionGoals.fatGoal = Math.round((this.preferences.nutritionGoals.calorieGoal * 0.3) / 9);
+                // Actividad moderada
+                this.preferences.fitnessGoals.activityCalories = 300;
+                this.preferences.fitnessGoals.workoutFrequency = 3;
+                // Entrenamientos variados
+                this.preferences.fitnessGoals.preferredWorkouts = ['cardio', 'strength', 'flexibility'];
+                break;
+                
+            case 'athleticPerformance':
+                // Enfoque en rendimiento - calorías suficientes para entrenamientos intensos
+                // Ligero superávit calórico
+                this.preferences.nutritionGoals.calorieGoal = Math.round(
+                    this.preferences.nutritionGoals.calorieGoal * 1.1
+                );
+                // Mayor proporción de carbohidratos para energía
+                this.preferences.nutritionGoals.proteinGoal = Math.round((this.preferences.nutritionGoals.calorieGoal * 0.2) / 4);
+                this.preferences.nutritionGoals.carbsGoal = Math.round((this.preferences.nutritionGoals.calorieGoal * 0.6) / 4);
+                this.preferences.nutritionGoals.fatGoal = Math.round((this.preferences.nutritionGoals.calorieGoal * 0.2) / 9);
+                // Alta actividad
+                this.preferences.fitnessGoals.activityCalories = 600;
+                this.preferences.fitnessGoals.workoutFrequency = 5;
+                // Entrenamientos específicos
+                this.preferences.fitnessGoals.preferredWorkouts = ['sport-specific', 'hiit', 'strength', 'cardio'];
+                break;
+                
+            case 'healthImprovement':
+                // Enfoque en salud general - calorías moderadas
+                // Slight deficit if overweight, otherwise maintenance
+                if (profile.weight && profile.height) {
+                    const bmi = profile.weight / Math.pow(profile.height/100, 2);
+                    if (bmi > 25) {
+                        this.preferences.nutritionGoals.calorieGoal = Math.round(
+                            this.preferences.nutritionGoals.calorieGoal * 0.9
+                        );
+                    }
+                }
+                // Distribución saludable de macronutrientes
+                this.preferences.nutritionGoals.proteinGoal = Math.round((this.preferences.nutritionGoals.calorieGoal * 0.2) / 4);
+                this.preferences.nutritionGoals.carbsGoal = Math.round((this.preferences.nutritionGoals.calorieGoal * 0.5) / 4);
+                this.preferences.nutritionGoals.fatGoal = Math.round((this.preferences.nutritionGoals.calorieGoal * 0.3) / 9);
+                // Actividad moderada
+                this.preferences.fitnessGoals.activityCalories = 250;
+                this.preferences.fitnessGoals.workoutFrequency = 3;
+                // Ejercicios variados y de bajo impacto
+                this.preferences.fitnessGoals.preferredWorkouts = ['walking', 'flexibility', 'strength-light', 'swimming'];
+                break;
+        }
+    }
+
+    // Obtener objetivos de fitness
+    getFitnessGoals() {
+        return { ...this.preferences.fitnessGoals };
+    }
+
+    // Evaluar compatibilidad del alimento con objetivos de fitness
+    isFoodCompatibleWithFitnessGoals(foodInfo) {
+        const fitnessGoals = this.preferences.fitnessGoals;
+        const currentGoal = fitnessGoals.primaryGoal;
+        
+        // Si no hay objetivo establecido, cualquier alimento es compatible
+        if (!currentGoal) {
+            return { compatible: true };
+        }
+        
+        const issues = [];
+        const recommendations = [];
+        
+        // Evaluar basado en el objetivo primario
+        switch (currentGoal) {
+            case 'weightLoss':
+                // Alta densidad calórica (calorías por gramo)
+                if (foodInfo.calories > 300 && foodInfo.weight && (foodInfo.calories / foodInfo.weight) > 3) {
+                    issues.push({
+                        severity: 'warning',
+                        message: 'Este alimento tiene alta densidad calórica, lo que podría dificultar tu objetivo de pérdida de peso'
+                    });
+                    recommendations.push('Considera opciones con menos calorías por porción');
+                }
+                
+                // Alto en grasas saturadas
+                if (foodInfo.saturatedFat && foodInfo.saturatedFat > 5) {
+                    issues.push({
+                        severity: 'warning',
+                        message: 'Alto contenido de grasas saturadas'
+                    });
+                    recommendations.push('Busca alternativas con menos grasas saturadas');
+                }
+                
+                // Alto en azúcares añadidos
+                if (foodInfo.sugar && foodInfo.sugar > 15) {
+                    issues.push({
+                        severity: 'warning',
+                        message: 'Alto contenido de azúcares'
+                    });
+                    recommendations.push('Para pérdida de peso, limita los alimentos con alto contenido de azúcares');
+                }
+                
+                // Bajo en proteínas (para alimentos principales)
+                if (foodInfo.category === 'meal' && foodInfo.protein && foodInfo.protein < 15) {
+                    recommendations.push('Para pérdida de peso, prioriza alimentos ricos en proteínas que te ayudarán a mantener la masa muscular');
+                }
+                break;
+                
+            case 'muscleGain':
+                // Bajo en proteínas (para alimentos principales)
+                if (foodInfo.category === 'meal' && foodInfo.protein && foodInfo.protein < 20) {
+                    issues.push({
+                        severity: 'info',
+                        message: 'Este alimento es relativamente bajo en proteínas para tu objetivo de ganancia muscular'
+                    });
+                    recommendations.push('Para ganar músculo, prioriza alimentos con mayor contenido proteico');
+                }
+                
+                // Bajo en calorías totales
+                if (foodInfo.calories < 200 && foodInfo.category === 'meal') {
+                    recommendations.push('Considera acompañar este alimento con otras fuentes de calorías para alcanzar tu superávit calórico');
+                }
+                
+                // Bajo en carbohidratos (para antes/después del ejercicio)
+                if (foodInfo.carbs && foodInfo.carbs < 30 && foodInfo.mealTime === 'pre-workout') {
+                    recommendations.push('Para mejor rendimiento en el entrenamiento, busca alimentos más ricos en carbohidratos antes de ejercitarse');
+                }
+                break;
+                
+            case 'maintenance':
+                // Recomendaciones generales para mantenimiento
+                if (foodInfo.sugar && foodInfo.sugar > 25) {
+                    issues.push({
+                        severity: 'info',
+                        message: 'Alto contenido de azúcares'
+                    });
+                    recommendations.push('Incluso en mantenimiento, es recomendable limitar el consumo excesivo de azúcares');
+                }
+                break;
+                
+            case 'athleticPerformance':
+                // Bajo en carbohidratos (para alimentos pre-entrenamiento)
+                if (foodInfo.category === 'pre-workout' && foodInfo.carbs && foodInfo.carbs < 40) {
+                    issues.push({
+                        severity: 'info',
+                        message: 'Este alimento podría no proporcionar suficientes carbohidratos para un rendimiento óptimo'
+                    });
+                    recommendations.push('Para mejorar el rendimiento, consume alimentos más ricos en carbohidratos antes del entrenamiento');
+                }
+                
+                // Bajo en proteínas (post-entrenamiento)
+                if (foodInfo.category === 'post-workout' && foodInfo.protein && foodInfo.protein < 20) {
+                    issues.push({
+                        severity: 'info',
+                        message: 'Este alimento contiene menos proteínas de las recomendadas para recuperación muscular'
+                    });
+                    recommendations.push('Después del entrenamiento, prioriza alimentos ricos en proteínas para optimizar la recuperación');
+                }
+                break;
+                
+            case 'healthImprovement':
+                // Alto en grasas saturadas
+                if (foodInfo.saturatedFat && foodInfo.saturatedFat > 5) {
+                    issues.push({
+                        severity: 'warning',
+                        message: 'Alto contenido de grasas saturadas'
+                    });
+                    recommendations.push('Para mejorar la salud cardiovascular, limita el consumo de grasas saturadas');
+                }
+                
+                // Alto en sodio
+                if (foodInfo.sodium && foodInfo.sodium > 600) {
+                    issues.push({
+                        severity: 'warning',
+                        message: 'Alto contenido de sodio'
+                    });
+                    recommendations.push('Un alto consumo de sodio puede afectar la presión arterial. Busca alternativas con menos sal');
+                }
+                
+                // Bajo en fibra
+                if (foodInfo.fiber && foodInfo.fiber < 2 && foodInfo.category === 'meal') {
+                    recommendations.push('Procura incluir más alimentos ricos en fibra para una mejor salud digestiva');
+                }
+                break;
+        }
+        
+        return {
+            compatible: issues.length === 0 || issues.every(issue => issue.severity === 'info'),
+            issues: issues,
+            recommendations: recommendations
+        };
     }
 
     // Actualizar preferencias dietéticas

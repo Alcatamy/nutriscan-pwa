@@ -29,6 +29,15 @@
     <!-- MobileNet para clasificación avanzada de alimentos -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
     
+    <!-- Firebase App (la base principal de Firebase) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    
+    <!-- Firebase Auth -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
     <!-- Estilos -->
     <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -36,29 +45,201 @@
     <div class="app-container">
         <!-- Header -->
         <header>
-            <h1>NutriScan</h1>
+            <div class="header-logo">
+                <h1>NutriScan</h1>
+            </div>
             <div class="header-actions">
-                <button id="settings-btn" class="icon-btn">
-                    <i class="fas fa-cog"></i>
+                <button id="menu-toggle-btn" class="icon-btn">
+                    <i class="fas fa-bars"></i>
                 </button>
+                <div id="user-profile" class="user-profile">
+                    <img id="user-avatar" src="img/avatar-placeholder.png" alt="Avatar de usuario">
+                </div>
             </div>
         </header>
 
-        <!-- Navegación principal -->
+        <!-- Menú lateral -->
+        <aside id="side-menu" class="side-menu">
+            <div class="menu-header">
+                <div id="menu-user-info" class="menu-user-info">
+                    <img id="menu-user-avatar" src="img/avatar-placeholder.png" alt="Avatar">
+                    <div class="user-details">
+                        <span id="menu-user-name">Usuario</span>
+                        <span id="menu-user-email">usuario@example.com</span>
+                    </div>
+                </div>
+                <button id="menu-close-btn" class="icon-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <nav class="menu-nav">
+                <ul>
+                    <li><button data-screen="home-screen" class="menu-btn active"><i class="fas fa-home"></i> Inicio</button></li>
+                    <li><button data-screen="scanner-screen" class="menu-btn"><i class="fas fa-camera"></i> Escanear alimento</button></li>
+                    <li><button data-screen="barcode-screen" class="menu-btn"><i class="fas fa-barcode"></i> Escanear código</button></li>
+                    <li><button data-screen="food-log-screen" class="menu-btn"><i class="fas fa-utensils"></i> Diario alimenticio</button></li>
+                    <li><button data-screen="fitness-screen" class="menu-btn"><i class="fas fa-dumbbell"></i> Plan de fitness</button></li>
+                    <li><button data-screen="workout-screen" class="menu-btn"><i class="fas fa-running"></i> Entrenamientos</button></li>
+                    <li><button data-screen="stats-screen" class="menu-btn"><i class="fas fa-chart-pie"></i> Estadísticas</button></li>
+                    <li><button data-screen="profile-screen" class="menu-btn"><i class="fas fa-user"></i> Perfil</button></li>
+                    <li><button data-screen="settings-screen" class="menu-btn"><i class="fas fa-cog"></i> Configuración</button></li>
+                    <li><button id="logout-btn" class="menu-btn logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</button></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Navegación principal (móvil) -->
         <nav class="main-nav">
             <ul>
-                <li><button id="scanner-nav-btn" class="nav-btn active"><i class="fas fa-camera"></i><span>Escanear</span></button></li>
-                <li><button id="barcode-nav-btn" class="nav-btn"><i class="fas fa-barcode"></i><span>Código</span></button></li>
-                <li><button id="diary-nav-btn" class="nav-btn"><i class="fas fa-utensils"></i><span>Diario</span></button></li>
-                <li><button id="stats-nav-btn" class="nav-btn"><i class="fas fa-chart-pie"></i><span>Estadísticas</span></button></li>
-                <li><button id="profile-nav-btn" class="nav-btn"><i class="fas fa-user"></i><span>Perfil</span></button></li>
+                <li><button data-screen="home-screen" class="nav-btn active"><i class="fas fa-home"></i><span>Inicio</span></button></li>
+                <li><button data-screen="scanner-screen" class="nav-btn"><i class="fas fa-camera"></i><span>Escanear</span></button></li>
+                <li><button data-screen="food-log-screen" class="nav-btn"><i class="fas fa-utensils"></i><span>Diario</span></button></li>
+                <li><button data-screen="fitness-screen" class="nav-btn"><i class="fas fa-dumbbell"></i><span>Fitness</span></button></li>
+                <li><button data-screen="profile-screen" class="nav-btn"><i class="fas fa-user"></i><span>Perfil</span></button></li>
             </ul>
         </nav>
 
         <!-- Contenido principal -->
         <main>
+            <!-- Pantalla de login -->
+            <section id="login-screen" class="screen">
+                <div class="login-container">
+                    <div class="logo-container">
+                        <img src="img/logo.png" alt="NutriScan Logo" class="app-logo">
+                        <h1>NutriScan</h1>
+                        <p>Tu asistente personal de nutrición y fitness</p>
+                    </div>
+                    
+                    <div class="auth-options">
+                        <button id="google-login-btn" class="auth-btn google-btn">
+                            <i class="fab fa-google"></i> Iniciar sesión con Google
+                        </button>
+                        <button id="email-login-toggle" class="auth-btn email-btn">
+                            <i class="fas fa-envelope"></i> Iniciar sesión con email
+                        </button>
+                        <button id="guest-login-btn" class="auth-btn guest-btn">
+                            <i class="fas fa-user"></i> Continuar como invitado
+                        </button>
+                    </div>
+                    
+                    <div id="email-login-form" class="login-form hidden">
+                        <div class="form-group">
+                            <label for="login-email">Correo electrónico</label>
+                            <input type="email" id="login-email" placeholder="correo@ejemplo.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">Contraseña</label>
+                            <input type="password" id="login-password" placeholder="Contraseña">
+                        </div>
+                        <button id="login-submit-btn" class="auth-btn primary-btn">Iniciar sesión</button>
+                        <p class="form-link">¿No tienes cuenta? <a id="register-toggle" href="#">Registrarse</a></p>
+                        <p class="form-link"><a id="forgot-password-link" href="#">Olvidé mi contraseña</a></p>
+                    </div>
+                    
+                    <div id="register-form" class="login-form hidden">
+                        <div class="form-group">
+                            <label for="register-name">Nombre</label>
+                            <input type="text" id="register-name" placeholder="Tu nombre">
+                        </div>
+                        <div class="form-group">
+                            <label for="register-email">Correo electrónico</label>
+                            <input type="email" id="register-email" placeholder="correo@ejemplo.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="register-password">Contraseña</label>
+                            <input type="password" id="register-password" placeholder="Contraseña">
+                        </div>
+                        <div class="form-group">
+                            <label for="register-confirm-password">Confirmar contraseña</label>
+                            <input type="password" id="register-confirm-password" placeholder="Confirma tu contraseña">
+                        </div>
+                        <button id="register-submit-btn" class="auth-btn primary-btn">Registrarse</button>
+                        <p class="form-link">¿Ya tienes cuenta? <a id="login-toggle" href="#">Iniciar sesión</a></p>
+                    </div>
+                    
+                    <div class="login-footer">
+                        <p>Al iniciar sesión aceptas nuestros <a href="#">Términos de servicio</a> y <a href="#">Política de privacidad</a></p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Pantalla de inicio (dashboard) -->
+            <section id="home-screen" class="screen">
+                <div class="dashboard-container">
+                    <div class="welcome-section">
+                        <h2>Bienvenido, <span id="user-name-display">Usuario</span></h2>
+                        <p>¿Qué deseas hacer hoy?</p>
+                    </div>
+                    
+                    <div class="daily-summary">
+                        <h3>Resumen de hoy</h3>
+                        <div class="summary-cards">
+                            <div class="summary-card">
+                                <div class="card-icon"><i class="fas fa-fire"></i></div>
+                                <div class="card-info">
+                                    <span class="card-value" id="today-calories">0/2000</span>
+                                    <span class="card-label">Calorías</span>
+                                </div>
+                                <div class="progress-bar" id="calories-progress">
+                                    <div class="progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="card-icon"><i class="fas fa-walking"></i></div>
+                                <div class="card-info">
+                                    <span class="card-value" id="today-activity">0/300</span>
+                                    <span class="card-label">Actividad (kcal)</span>
+                                </div>
+                                <div class="progress-bar" id="activity-progress">
+                                    <div class="progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="card-icon"><i class="fas fa-tint"></i></div>
+                                <div class="card-info">
+                                    <span class="card-value" id="today-water">0/2000</span>
+                                    <span class="card-label">Agua (ml)</span>
+                                </div>
+                                <div class="progress-bar" id="water-progress">
+                                    <div class="progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="quick-actions">
+                        <h3>Acciones rápidas</h3>
+                        <div class="action-buttons">
+                            <button id="quick-scan-btn" class="action-btn">
+                                <i class="fas fa-camera"></i>
+                                <span>Escanear alimento</span>
+                            </button>
+                            <button id="quick-log-btn" class="action-btn">
+                                <i class="fas fa-utensils"></i>
+                                <span>Registrar comida</span>
+                            </button>
+                            <button id="quick-workout-btn" class="action-btn">
+                                <i class="fas fa-dumbbell"></i>
+                                <span>Comenzar entrenamiento</span>
+                            </button>
+                            <button id="quick-water-btn" class="action-btn">
+                                <i class="fas fa-tint"></i>
+                                <span>Registrar agua</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="recommendations-section">
+                        <h3>Recomendaciones</h3>
+                        <div id="recommendations-container" class="recommendations-container">
+                            <!-- Contenido generado dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
             <!-- Pantalla de escáner de alimentos -->
-            <section id="scanner-screen" class="screen active">
+            <section id="scanner-screen" class="screen">
                 <div class="camera-container">
                     <video id="camera-view" autoplay playsinline></video>
                     <canvas id="camera-canvas"></canvas>
@@ -293,6 +474,100 @@
                 </div>
             </section>
             
+            <!-- Pantalla de Fitness y Plan de Entrenamiento -->
+            <section id="fitness-screen" class="screen">
+                <div class="fitness-container">
+                    <div class="fitness-header">
+                        <h2>Tu Plan de Fitness</h2>
+                        <div class="fitness-goal">
+                            <p>Objetivo actual: <span id="current-fitness-goal">No definido</span></p>
+                            <button id="change-goal-btn" class="text-btn">
+                                <i class="fas fa-edit"></i> Cambiar objetivo
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="fitness-summary">
+                        <div class="summary-cards">
+                            <div class="summary-card">
+                                <div class="card-icon"><i class="fas fa-dumbbell"></i></div>
+                                <div class="card-info">
+                                    <span class="card-value" id="workouts-completed">0/4</span>
+                                    <span class="card-label">Entrenamientos esta semana</span>
+                                </div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="card-icon"><i class="fas fa-fire-alt"></i></div>
+                                <div class="card-info">
+                                    <span class="card-value" id="weekly-activity-calories">0/2100</span>
+                                    <span class="card-label">Calorías quemadas (semana)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="fitness-section">
+                        <h3>Recomendaciones de entrenamiento</h3>
+                        <div id="workout-recommendations" class="workout-recommendations">
+                            <!-- Contenido generado dinámicamente -->
+                        </div>
+                    </div>
+                    
+                    <div class="fitness-section">
+                        <h3>Plan semanal</h3>
+                        <div id="weekly-plan" class="weekly-plan">
+                            <!-- Contenido generado dinámicamente -->
+                        </div>
+                    </div>
+                    
+                    <div class="fitness-section">
+                        <h3>Balance de nutrición y actividad</h3>
+                        <div id="nutrition-activity-balance" class="balance-chart">
+                            <!-- Gráfico de balance -->
+                        </div>
+                        <div id="balance-analysis" class="balance-analysis">
+                            <!-- Análisis de balance -->
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button id="start-workout-btn" class="primary-btn">
+                            <i class="fas fa-play"></i> Comenzar entrenamiento
+                        </button>
+                        <button id="customize-plan-btn" class="secondary-btn">
+                            <i class="fas fa-cog"></i> Personalizar plan
+                        </button>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Pantalla de Entrenamientos -->
+            <section id="workout-screen" class="screen">
+                <div class="workout-container">
+                    <div class="workout-header">
+                        <h2>Entrenamientos</h2>
+                        <div class="workout-filters">
+                            <button data-filter="all" class="filter-btn active">Todos</button>
+                            <button data-filter="cardio" class="filter-btn">Cardio</button>
+                            <button data-filter="strength" class="filter-btn">Fuerza</button>
+                            <button data-filter="flexibility" class="filter-btn">Flexibilidad</button>
+                            <button data-filter="hiit" class="filter-btn">HIIT</button>
+                        </div>
+                    </div>
+                    
+                    <div id="workouts-list" class="workouts-list">
+                        <!-- Lista de entrenamientos generada dinámicamente -->
+                    </div>
+                    
+                    <div class="workout-history">
+                        <h3>Historial de entrenamientos</h3>
+                        <div id="workout-history-list" class="history-list">
+                            <!-- Historial generado dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
             <!-- Pantalla de perfil de usuario -->
             <section id="profile-screen" class="screen">
                 <div class="profile-container">
@@ -424,11 +699,68 @@
         <div id="notification" class="notification">
             <span id="notification-text"></span>
         </div>
+        
+        <!-- Overlay para modales -->
+        <div id="modal-overlay" class="modal-overlay"></div>
+        
+        <!-- Modal para selección de objetivo fitness -->
+        <div id="fitness-goal-modal" class="modal">
+            <div class="modal-header">
+                <h3>Selecciona tu objetivo de fitness</h3>
+                <button class="modal-close-btn"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-content">
+                <div class="goal-options">
+                    <div class="goal-option" data-goal="weightLoss">
+                        <i class="fas fa-weight"></i>
+                        <h4>Pérdida de peso</h4>
+                        <p>Reduce grasa corporal manteniendo masa muscular</p>
+                    </div>
+                    <div class="goal-option" data-goal="muscleGain">
+                        <i class="fas fa-dumbbell"></i>
+                        <h4>Ganancia muscular</h4>
+                        <p>Incrementa masa muscular y fuerza</p>
+                    </div>
+                    <div class="goal-option" data-goal="maintenance">
+                        <i class="fas fa-balance-scale"></i>
+                        <h4>Mantenimiento</h4>
+                        <p>Mantén tu peso y composición corporal actual</p>
+                    </div>
+                    <div class="goal-option" data-goal="athleticPerformance">
+                        <i class="fas fa-running"></i>
+                        <h4>Rendimiento atlético</h4>
+                        <p>Mejora tu rendimiento deportivo</p>
+                    </div>
+                    <div class="goal-option" data-goal="healthImprovement">
+                        <i class="fas fa-heartbeat"></i>
+                        <h4>Mejora de salud</h4>
+                        <p>Enfócate en mejorar indicadores de salud</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="goal-cancel-btn" class="secondary-btn">Cancelar</button>
+                <button id="goal-save-btn" class="primary-btn">Guardar objetivo</button>
+            </div>
+        </div>
     </div>
 
     <!-- Scripts -->
     <script type="module" src="js/app.js"></script>
     <script>
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "TU_API_KEY",
+            authDomain: "nutriscan-app.firebaseapp.com",
+            projectId: "nutriscan-app",
+            storageBucket: "nutriscan-app.appspot.com",
+            messagingSenderId: "TU_MESSAGING_SENDER_ID",
+            appId: "TU_APP_ID"
+        };
+        
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        
         // Registrar Service Worker para PWA
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js')
