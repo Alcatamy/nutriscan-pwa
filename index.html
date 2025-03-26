@@ -22,6 +22,10 @@
     <!-- PWA Builder Config -->
     <link rel="pwabuilder-config" href="pwabuilder-sw-config.json">
     
+    <!-- TensorFlow.js y COCO-SSD para detección de objetos -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    
     <!-- Estilos -->
     <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -47,16 +51,21 @@
     
     <!-- Pantalla de Cámara -->
     <div id="camera-screen" class="screen">
+        <h1>Escanear Alimento</h1>
         <div class="camera-container">
             <video id="camera-view" autoplay playsinline></video>
-            <canvas id="camera-canvas" style="display: none;"></canvas>
-            <div class="camera-overlay">
-                <div class="camera-frame"></div>
-            </div>
-            <div class="camera-controls">
-                <button id="capture-button" class="circle-button">📸</button>
+            <canvas id="camera-canvas"></canvas>
+            
+            <!-- Indicador de carga del modelo -->
+            <div id="model-loading" class="loading-model">
+                <div class="spinner"></div>
+                <p>Cargando modelo de detección...</p>
             </div>
         </div>
+        <button id="capture-button" class="primary-button">
+            <span class="button-icon">📸</span>
+            Capturar
+        </button>
     </div>
     
     <!-- Pantalla de Carga -->

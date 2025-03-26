@@ -171,7 +171,7 @@ h1 {
   position: relative;
   width: 100%;
   height: 70vh;
-  background-color: #000;
+  background: #000;
   overflow: hidden;
 }
 
@@ -182,7 +182,13 @@ h1 {
 }
 
 #camera-canvas {
-  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  pointer-events: none;
 }
 
 .camera-overlay {
@@ -485,4 +491,40 @@ h3 {
     --card-color: #1E1E1E;
     --shadow-color: rgba(0, 0, 0, 0.3);
   }
+}
+
+/* Indicador de carga del modelo */
+.loading-model {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  display: none; /* Por defecto oculto */
+}
+
+.loading-model p {
+  color: #fff;
+  font-size: 1.2rem;
+  margin-top: 1rem;
+}
+
+.loading-model .spinner {
+  width: 60px;
+  height: 60px;
+  border: 6px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--primary-color);
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
