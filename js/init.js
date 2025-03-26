@@ -2,41 +2,61 @@
 import authManager from './auth.js';
 import userPreferences from './models/user-preferences.js';
 import workoutRecommendations from './models/workout-recommendations.js';
+import nutriScanDB from './models/database.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Iniciando aplicación NutriScan...');
     // Establecer pantalla de carga inicial
     showScreen('loading-screen');
     
+    // Mostrar notificación de inicio en la pantalla de carga
+    updateLoadingStatus('Inicializando componentes...');
+    
     // Inicializar módulos
     try {
         await initializeApp();
     } catch (error) {
         console.error('Error al inicializar la aplicación:', error);
-        showErrorScreen('No se pudo inicializar la aplicación');
+        showErrorScreen('No se pudo inicializar la aplicación: ' + error.message);
     }
 });
+
+// Actualizar el estado de carga con mensaje informativo
+function updateLoadingStatus(message) {
+    const loadingMessage = document.querySelector('#loading-screen p');
+    if (loadingMessage) {
+        loadingMessage.textContent = message;
+    }
+}
 
 // Función principal de inicialización
 async function initializeApp() {
     try {
         console.log('Inicializando módulos...');
-        // Inicializar Firebase primero
+        
+        // Verificar Firebase primero
         if (!firebase.apps.length) {
             console.error('Firebase no está inicializado correctamente');
             showErrorScreen('Error al inicializar Firebase');
             return;
         }
         
-        // Inicializar módulos
-        await Promise.all([
-            userPreferences.init(),
-            workoutRecommendations.init()
-        ]);
+        // Inicializar base de datos
+        updateLoadingStatus('Configurando base de datos local...');
+        await nutriScanDB.init();
         
-        console.log('Módulos inicializados correctamente');
+        // Inicializar preferencias de usuario
+        updateLoadingStatus('Cargando preferencias...');
+        await userPreferences.init();
+        
+        // Inicializar recomendaciones de entrenamiento
+        updateLoadingStatus('Preparando sistema de recomendaciones...');
+        await workoutRecommendations.init();
+        
+        console.log('Módulos principales inicializados correctamente');
         
         // Iniciar AuthManager después que las preferencias estén listas
+        updateLoadingStatus('Verificando autenticación...');
         await authManager.init();
         
         // Configurar eventos de UI
@@ -46,10 +66,11 @@ async function initializeApp() {
         setupAuthStateObserver();
         
         // Verificar si hay un usuario autenticado
-        const currentUser = authManager.getCurrentUser();
+        const currentUser = firebase.auth().currentUser;
         if (currentUser) {
             console.log('Usuario ya autenticado:', currentUser.displayName || currentUser.email);
-            handleUserSignIn(currentUser);
+            updateLoadingStatus('Cargando tu perfil...');
+            await handleUserSignIn(currentUser);
         } else {
             console.log('No hay usuario autenticado, mostrando pantalla de login');
             // Mostrar pantalla de login
@@ -120,9 +141,9 @@ function setupUIEvents() {
     menuButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const screenId = btn.getAttribute('data-screen');
-            if (screenId === 'logout-btn') {
+            if (screenId === 'logout-btn' || btn.id === 'logout-btn') {
                 authManager.logout();
-            } else {
+            } else if (screenId) {
                 showScreen(screenId);
                 toggleSideMenu();
             }
@@ -133,7 +154,9 @@ function setupUIEvents() {
     navButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const screenId = btn.getAttribute('data-screen');
-            showScreen(screenId);
+            if (screenId) {
+                showScreen(screenId);
+            }
         });
     });
     
@@ -197,6 +220,21 @@ function setupUIEvents() {
         });
     }
     
+    // Alternar entre login y registro
+    if (registerToggle) {
+        registerToggle.addEventListener('click', () => {
+            if (emailLoginForm) emailLoginForm.classList.add('hidden');
+            if (registerForm) registerForm.classList.remove('hidden');
+        });
+    }
+    
+    if (loginToggle) {
+        loginToggle.addEventListener('click', () => {
+            if (registerForm) registerForm.classList.add('hidden');
+            if (emailLoginForm) emailLoginForm.classList.remove('hidden');
+        });
+    }
+    
     // Submit login con email
     if (loginSubmitBtn) {
         loginSubmitBtn.addEventListener('click', async () => {
@@ -250,7 +288,7 @@ function setupUIEvents() {
                 if (!result.success) {
                     showNotification(result.error);
                 } else {
-                    showNotification('Registro exitoso');
+                    showNotification('¡Registro exitoso! Iniciando sesión...');
                 }
             } catch (error) {
                 showLoading(false);
@@ -260,31 +298,13 @@ function setupUIEvents() {
         });
     }
     
-    // Alternar entre login y registro
-    if (registerToggle) {
-        registerToggle.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (emailLoginForm) emailLoginForm.classList.add('hidden');
-            if (registerForm) registerForm.classList.remove('hidden');
-        });
-    }
-    
-    if (loginToggle) {
-        loginToggle.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (emailLoginForm) emailLoginForm.classList.remove('hidden');
-            if (registerForm) registerForm.classList.add('hidden');
-        });
-    }
-    
     // Olvidé mi contraseña
     if (forgotPasswordLink) {
-        forgotPasswordLink.addEventListener('click', async (e) => {
-            e.preventDefault();
+        forgotPasswordLink.addEventListener('click', async () => {
             const email = document.getElementById('login-email').value;
             
             if (!email) {
-                showNotification('Por favor, ingresa tu email para restablecer la contraseña');
+                showNotification('Por favor, introduce tu email para restablecer contraseña');
                 return;
             }
             
@@ -310,7 +330,11 @@ function setupUIEvents() {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
             try {
-                await authManager.logout();
+                const result = await authManager.logout();
+                
+                if (!result.success) {
+                    showNotification(result.error);
+                }
             } catch (error) {
                 showNotification('Error al cerrar sesión');
                 console.error(error);
@@ -318,25 +342,27 @@ function setupUIEvents() {
         });
     }
     
-    // === EVENTOS FITNESS ===
-    // Selección de objetivo fitness
-    if (goalOptions) {
-        goalOptions.forEach(option => {
-            option.addEventListener('click', () => {
-                goalOptions.forEach(opt => opt.classList.remove('active'));
-                option.classList.add('active');
-                window.selectedGoal = option.getAttribute('data-goal');
-                console.log('Objetivo seleccionado:', window.selectedGoal);
-            });
-        });
-    }
-    
+    // === EVENTOS DE FITNESS ===
     // Cambiar objetivo fitness
     if (changeGoalBtn) {
         changeGoalBtn.addEventListener('click', () => {
             toggleModal('fitness-goal-modal', true);
         });
     }
+    
+    // Seleccionar objetivo fitness
+    goalOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            // Deseleccionar todas las opciones
+            goalOptions.forEach(opt => opt.classList.remove('selected'));
+            
+            // Seleccionar la opción actual
+            option.classList.add('selected');
+            
+            // Guardar la selección
+            window.selectedGoal = option.getAttribute('data-goal');
+        });
+    });
     
     // Guardar objetivo fitness
     if (goalSaveBtn) {
@@ -350,15 +376,19 @@ function setupUIEvents() {
         });
     }
     
-    // Cerrar modal con botón X
+    // Cerrar modales
     if (modalCloseBtn) {
         modalCloseBtn.addEventListener('click', () => {
-            toggleModal('fitness-goal-modal', false);
+            // Cerrar todos los modales
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.classList.remove('active');
+            });
+            modalOverlay.classList.remove('active');
         });
     }
     
-    // === EVENTOS DEL DASHBOARD ===
-    // Botones de acción rápida
+    // === EVENTOS DE DASHBOARD ===
+    // Acciones rápidas
     if (quickScanBtn) {
         quickScanBtn.addEventListener('click', () => {
             showScreen('scanner-screen');
@@ -378,9 +408,30 @@ function setupUIEvents() {
     }
     
     if (quickWaterBtn) {
-        quickWaterBtn.addEventListener('click', () => {
-            showNotification('Agua registrada');
-            updateWaterProgress();
+        quickWaterBtn.addEventListener('click', async () => {
+            try {
+                // Incremento de agua en ml (por defecto 250ml)
+                const waterIncrement = 250;
+                
+                // Obtener preferencias para límite diario
+                const nutritionGoals = userPreferences.getNutritionGoals();
+                const waterGoal = nutritionGoals?.waterIntake || 2000; // ml por defecto
+                
+                // Actualizar en preferencias (simular por ahora)
+                // TODO: Implementar registro real de agua
+                
+                // Actualizar UI (usando datos ficticios por ahora)
+                const currentWater = parseInt(document.getElementById('today-water').textContent.split('/')[0]) || 0;
+                const newWater = Math.min(currentWater + waterIncrement, waterGoal);
+                
+                // Actualizar barra de progreso
+                updateWaterProgress(newWater, waterGoal);
+                
+                showNotification(`¡Añadidos ${waterIncrement}ml de agua!`);
+            } catch (error) {
+                console.error('Error al registrar agua:', error);
+                showNotification('Error al registrar agua');
+            }
         });
     }
     
@@ -391,13 +442,12 @@ function setupUIEvents() {
     }
 }
 
-// Configurar el observador de estado de autenticación
+// Observer para cambios de estado de autenticación
 function setupAuthStateObserver() {
-    console.log('Configurando observador de estado de autenticación');
-    authManager.onAuthStateChanged(user => {
+    firebase.auth().onAuthStateChanged(async (user) => {
         if (user) {
-            console.log('Auth state changed: Usuario autenticado');
-            handleUserSignIn(user);
+            console.log('Auth state changed: Usuario autenticado', user.displayName || user.email);
+            await handleUserSignIn(user);
         } else {
             console.log('Auth state changed: No hay usuario autenticado');
             // Mostrar pantalla de login
@@ -449,7 +499,7 @@ async function handleUserSignIn(user) {
         
         if (!fitnessGoals.primaryGoal) {
             console.log('El usuario no tiene objetivo fitness, mostrando modal de selección');
-            // Primero ir a la pantalla home
+            // Primero ir a la pantalla home para que se vea el fondo
             showScreen('home-screen');
             
             // Luego mostrar el modal de selección de objetivo
@@ -605,14 +655,6 @@ function updateWaterProgress(current, goal) {
     const todayWater = document.getElementById('today-water');
     const waterProgress = document.getElementById('water-progress');
     
-    // Si no se proporcionan valores, incrementar en 250ml
-    if (current === undefined || goal === undefined) {
-        const waterText = todayWater ? todayWater.textContent : '0/2000';
-        const parts = waterText.split('/');
-        current = parseInt(parts[0]) + 250;
-        goal = parseInt(parts[1]);
-    }
-    
     if (todayWater) {
         todayWater.textContent = `${current}/${goal}`;
     }
@@ -625,87 +667,169 @@ function updateWaterProgress(current, goal) {
 
 // Mostrar recomendaciones de entrenamiento
 function displayWorkoutRecommendations(recommendations) {
-    const container = document.getElementById('workout-recommendations');
+    const container = document.getElementById('recommendations-container');
     if (!container) return;
     
-    container.innerHTML = '';
+    container.innerHTML = ''; // Limpiar contenedor
     
+    if (!recommendations || recommendations.length === 0) {
+        container.innerHTML = `
+            <div class="no-recommendations">
+                <p>No hay recomendaciones disponibles en este momento.</p>
+                <p>Establece tu objetivo de fitness para obtener recomendaciones personalizadas.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Crear tarjetas para cada recomendación
     recommendations.forEach(rec => {
-        const workoutEl = document.createElement('div');
-        workoutEl.className = 'workout-recommendation';
+        const card = document.createElement('div');
+        card.className = 'recommendation-card';
         
-        workoutEl.innerHTML = `
-            <div class="workout-icon">
-                <i class="${rec.icon}"></i>
+        card.innerHTML = `
+            <div class="recommendation-icon">
+                <i class="${rec.icon || 'fas fa-dumbbell'}"></i>
             </div>
-            <div class="workout-info">
-                <div class="workout-title">${rec.title}</div>
-                <div class="workout-description">${rec.description}</div>
-                ${rec.workout ? `<div class="workout-time">${rec.workout.duration} minutos • ${rec.workout.calories} kcal</div>` : ''}
+            <div class="recommendation-info">
+                <h4>${rec.title}</h4>
+                <p>${rec.description}</p>
+                <span class="duration"><i class="far fa-clock"></i> ${rec.duration} min</span>
             </div>
-            <button class="start-workout-btn" data-workout="${rec.workoutType}">
-                <i class="fas fa-play"></i>
-            </button>
         `;
         
-        container.appendChild(workoutEl);
-    });
-    
-    // Añadir eventos a los botones
-    container.querySelectorAll('.start-workout-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const workoutType = this.getAttribute('data-workout');
-            startWorkout(workoutType);
+        // Hacer la tarjeta clickeable para comenzar entrenamiento
+        card.addEventListener('click', () => {
+            // Guardar recomendación seleccionada para usar en pantalla de entrenamiento
+            window.selectedWorkout = rec;
+            
+            // Ir a pantalla de entrenamiento
+            showScreen('workout-screen');
         });
+        
+        container.appendChild(card);
     });
 }
 
 // Mostrar plan semanal
-function displayWeeklyPlan(weekPlan) {
-    const container = document.getElementById('weekly-plan');
+function displayWeeklyPlan(weeklyPlan) {
+    const container = document.getElementById('weekly-plan-container');
     if (!container) return;
     
-    container.innerHTML = '';
+    container.innerHTML = ''; // Limpiar contenedor
     
-    // Obtener día actual para destacarlo
-    const today = new Date().getDay(); // 0 = Domingo, 1 = Lunes, etc.
-    const adjustedToday = today === 0 ? 6 : today - 1; // Ajustar para que 0 = Lunes, 6 = Domingo
-    
-    weekPlan.forEach((dayInfo, index) => {
-        const dayEl = document.createElement('div');
-        dayEl.className = 'day-plan';
-        if (index === adjustedToday) {
-            dayEl.classList.add('active');
-        }
-        
-        let workoutInfo = 'Descanso';
-        if (dayInfo.hasWorkout) {
-            if (dayInfo.workout) {
-                workoutInfo = `${dayInfo.workout.name} (${dayInfo.workout.duration} min)`;
-            } else if (dayInfo.workoutName) {
-                workoutInfo = dayInfo.workoutName;
-            }
-        }
-        
-        dayEl.innerHTML = `
-            <div class="day-name">${dayInfo.day}</div>
-            <div class="day-workout">${workoutInfo}</div>
-            ${dayInfo.hasWorkout ? '<button class="view-workout-btn"><i class="fas fa-eye"></i></button>' : ''}
+    if (!weeklyPlan || weeklyPlan.length === 0) {
+        container.innerHTML = `
+            <div class="no-plan">
+                <p>No hay plan de entrenamiento disponible.</p>
+                <p>Establece tu objetivo de fitness para generar un plan personalizado.</p>
+            </div>
         `;
+        return;
+    }
+    
+    // Crear tabla para el plan semanal
+    const table = document.createElement('table');
+    table.className = 'weekly-plan-table';
+    
+    // Crear fila para cada día
+    weeklyPlan.forEach(day => {
+        const row = document.createElement('tr');
         
-        container.appendChild(dayEl);
+        // Columna del día
+        const dayCell = document.createElement('td');
+        dayCell.className = 'day-cell';
+        dayCell.textContent = day.day;
+        row.appendChild(dayCell);
+        
+        // Columna del entrenamiento
+        const workoutCell = document.createElement('td');
+        workoutCell.className = 'workout-cell';
+        
+        if (day.hasWorkout) {
+            workoutCell.innerHTML = `
+                <div class="workout-info">
+                    <i class="${getWorkoutIcon(day.workoutType || 'mixed')}"></i>
+                    <span>${day.workoutName || 'Entrenamiento'}</span>
+                </div>
+            `;
+            workoutCell.classList.add('has-workout');
+        } else {
+            workoutCell.innerHTML = `
+                <div class="rest-day">
+                    <i class="fas fa-couch"></i>
+                    <span>Descanso</span>
+                </div>
+            `;
+        }
+        
+        row.appendChild(workoutCell);
+        table.appendChild(row);
     });
+    
+    container.appendChild(table);
 }
 
-// Iniciar un entrenamiento específico
-function startWorkout(workoutType) {
-    // Aquí se implementaría la lógica para iniciar un entrenamiento
-    // Por ahora solo mostraremos una notificación
-    showNotification(`Iniciando entrenamiento de ${workoutType}`);
-    showScreen('workout-screen');
+// Obtener icono para tipo de entrenamiento
+function getWorkoutIcon(workoutType) {
+    const icons = {
+        'cardio': 'fas fa-running',
+        'strength': 'fas fa-dumbbell',
+        'hiit': 'fas fa-bolt',
+        'flexibility': 'fas fa-child',
+        'mixed': 'fas fa-th-list',
+        'recovery': 'fas fa-heart',
+        'active_rest': 'fas fa-walking',
+        'agility': 'fas fa-fist-raised'
+    };
+    
+    return icons[workoutType] || 'fas fa-dumbbell';
 }
 
-// Mostrar pantalla
+// Mostrar notificación
+function showNotification(message, duration = 3000) {
+    // Usar notificación existente o crear una nueva
+    let notification = document.getElementById('notification');
+    
+    if (!notification) {
+        notification = document.createElement('div');
+        notification.id = 'notification';
+        document.body.appendChild(notification);
+    }
+    
+    notification.textContent = message;
+    notification.classList.add('active');
+    
+    // Ocultar después de duración
+    setTimeout(() => {
+        notification.classList.remove('active');
+    }, duration);
+}
+
+// Mostrar/ocultar indicador de carga
+function showLoading(show = true) {
+    const loadingIndicator = document.getElementById('loading-indicator');
+    
+    if (!loadingIndicator) return;
+    
+    if (show) {
+        loadingIndicator.classList.add('active');
+    } else {
+        loadingIndicator.classList.remove('active');
+    }
+}
+
+// Mostrar pantalla de error
+function showErrorScreen(message) {
+    const errorMessage = document.getElementById('error-message');
+    if (errorMessage) {
+        errorMessage.textContent = message;
+    }
+    
+    showScreen('error-screen');
+}
+
+// Mostrar pantalla específica
 function showScreen(screenId) {
     // Ocultar todas las pantallas
     document.querySelectorAll('.screen').forEach(screen => {
@@ -718,9 +842,43 @@ function showScreen(screenId) {
         screenToShow.classList.add('active');
         
         // Actualizar navegación
-        document.querySelectorAll('[data-screen]').forEach(btn => {
+        document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.classList.toggle('active', btn.getAttribute('data-screen') === screenId);
         });
+        
+        document.querySelectorAll('.menu-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-screen') === screenId);
+        });
+        
+        // Si es la pantalla de scanner, inicializar cámara
+        if (screenId === 'scanner-screen') {
+            // Importar dinámicamente el módulo camera.js
+            import('./camera.js')
+                .then(cameraModule => {
+                    // Inicializar la cámara
+                    cameraModule.initCamera()
+                        .catch(error => {
+                            console.error('Error al inicializar la cámara:', error);
+                            showNotification('Error al inicializar la cámara. Verifica los permisos.');
+                        });
+                })
+                .catch(error => {
+                    console.error('Error al cargar el módulo de cámara:', error);
+                });
+        }
+        
+        // Si es cualquier otra pantalla y la cámara está activa, detenerla
+        else if (screenId !== 'scanner-screen') {
+            import('./camera.js')
+                .then(cameraModule => {
+                    if (typeof cameraModule.stopCamera === 'function') {
+                        cameraModule.stopCamera();
+                    }
+                })
+                .catch(() => {
+                    // Ignorar errores si el módulo no está cargado
+                });
+        }
     }
 }
 
@@ -731,12 +889,11 @@ function toggleSideMenu() {
     
     if (sideMenu) {
         sideMenu.classList.toggle('open');
-        if (modalOverlay) {
-            if (sideMenu.classList.contains('open')) {
-                modalOverlay.classList.add('active');
-            } else {
-                modalOverlay.classList.remove('active');
-            }
+        
+        if (sideMenu.classList.contains('open')) {
+            modalOverlay.classList.add('active');
+        } else {
+            modalOverlay.classList.remove('active');
         }
     }
 }
@@ -746,7 +903,7 @@ function toggleModal(modalId, show = true) {
     const modal = document.getElementById(modalId);
     const modalOverlay = document.getElementById('modal-overlay');
     
-    if (modal && modalOverlay) {
+    if (modal) {
         if (show) {
             modal.classList.add('active');
             modalOverlay.classList.add('active');
@@ -754,49 +911,6 @@ function toggleModal(modalId, show = true) {
             modal.classList.remove('active');
             modalOverlay.classList.remove('active');
         }
-    }
-}
-
-// Mostrar notificación
-function showNotification(message, duration = 3000) {
-    const notification = document.getElementById('notification');
-    const notificationText = document.getElementById('notification-text');
-    
-    if (notification && notificationText) {
-        notificationText.textContent = message;
-        notification.classList.add('visible');
-        
-        setTimeout(() => {
-            notification.classList.remove('visible');
-        }, duration);
-    } else {
-        alert(message);
-    }
-}
-
-// Mostrar/ocultar indicador de carga
-function showLoading(show = true) {
-    const loadingScreen = document.getElementById('loading-screen');
-    
-    if (loadingScreen) {
-        if (show) {
-            loadingScreen.classList.add('active');
-        } else {
-            loadingScreen.classList.remove('active');
-        }
-    }
-}
-
-// Mostrar pantalla de error
-function showErrorScreen(message) {
-    const errorScreen = document.getElementById('error-screen');
-    const errorMessage = document.getElementById('error-message');
-    
-    if (errorScreen && errorMessage) {
-        errorMessage.textContent = message;
-        showScreen('error-screen');
-    } else {
-        alert(`Error: ${message}`);
     }
 }
 

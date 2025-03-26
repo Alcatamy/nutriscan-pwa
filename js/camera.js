@@ -10,6 +10,14 @@ let detectionInterval = null;
 // Inicializar la cámara
 async function initCamera() {
     try {
+        console.log('Inicializando cámara...');
+        
+        // Mostrar el indicador de carga
+        const loadingIndicator = document.getElementById('model-loading');
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'flex';
+        }
+        
         // Obtener acceso a la cámara
         stream = await navigator.mediaDevices.getUserMedia({
             video: {
@@ -21,27 +29,179 @@ async function initCamera() {
         
         // Configurar el elemento de video
         video = document.getElementById('camera-view');
+        if (!video) {
+            throw new Error('Elemento de video no encontrado');
+        }
+        
         video.srcObject = stream;
         
         // Configurar el canvas
         canvas = document.getElementById('camera-canvas');
+        if (!canvas) {
+            throw new Error('Elemento de canvas no encontrado');
+        }
+        
         context = canvas.getContext('2d');
         
         // Ajustar el tamaño del canvas al video
         video.addEventListener('loadedmetadata', () => {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
+            console.log(`Video dimensiones: ${video.videoWidth}x${video.videoHeight}`);
 
             // Iniciar detección en tiempo real una vez que el video esté listo
             startRealTimeDetection();
         });
 
+        // Configurar botones de la cámara
+        setupCameraButtons();
+
         // Asegurarse de que el video se esté reproduciendo
         await video.play();
+        
+        console.log('Cámara inicializada correctamente');
+        
+        return true;
     } catch (error) {
         console.error('Error accediendo a la cámara:', error);
-        alert('No se pudo acceder a la cámara. Por favor, verifica los permisos.');
+        
+        // Ocultar indicador de carga y mostrar error
+        const loadingIndicator = document.getElementById('model-loading');
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
+        }
+        
+        // Mostrar mensaje de error amigable según el tipo de error
+        let errorMessage = 'No se pudo acceder a la cámara.';
+        
+        if (error.name === 'NotAllowedError') {
+            errorMessage = 'Acceso a la cámara denegado. Por favor, permite el acceso desde la configuración de tu navegador.';
+        } else if (error.name === 'NotFoundError') {
+            errorMessage = 'No se encontró ninguna cámara en tu dispositivo.';
+        } else if (error.name === 'NotReadableError') {
+            errorMessage = 'La cámara está siendo utilizada por otra aplicación.';
+        }
+        
+        // Usar la función de notificación del módulo principal si está disponible
+        if (typeof window.showNotification === 'function') {
+            window.showNotification(errorMessage);
+        } else {
+            alert(errorMessage);
+        }
+        
         throw error;
+    }
+}
+
+// Configurar los botones de la interfaz de la cámara
+function setupCameraButtons() {
+    const captureBtn = document.getElementById('capture-btn');
+    const switchCameraBtn = document.getElementById('switch-camera-btn');
+    const flashBtn = document.getElementById('flash-btn');
+    
+    if (captureBtn) {
+        captureBtn.addEventListener('click', () => {
+            captureFromCamera();
+        });
+    }
+    
+    if (switchCameraBtn) {
+        switchCameraBtn.addEventListener('click', () => {
+            switchCamera();
+        });
+    }
+    
+    if (flashBtn) {
+        flashBtn.addEventListener('click', () => {
+            toggleFlash();
+        });
+    }
+}
+
+// Cambiar entre cámara frontal y trasera
+async function switchCamera() {
+    if (!stream) return;
+    
+    // Detener la cámara actual
+    stopCamera();
+    
+    // Invertir el modo de la cámara
+    const currentFacingMode = stream.getVideoTracks()[0].getSettings().facingMode;
+    const newFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+    
+    try {
+        // Obtener acceso a la nueva cámara
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: newFacingMode,
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
+        });
+        
+        // Configurar el elemento de video
+        video.srcObject = stream;
+        await video.play();
+        
+        // Mostrar notificación
+        if (typeof window.showNotification === 'function') {
+            window.showNotification(`Cámara ${newFacingMode === 'user' ? 'frontal' : 'trasera'} activada`);
+        }
+    } catch (error) {
+        console.error('Error al cambiar de cámara:', error);
+        
+        if (typeof window.showNotification === 'function') {
+            window.showNotification('Error al cambiar de cámara');
+        }
+    }
+}
+
+// Activar/desactivar flash (si está disponible)
+async function toggleFlash() {
+    if (!stream) return;
+    
+    try {
+        const track = stream.getVideoTracks()[0];
+        const capabilities = track.getCapabilities();
+        
+        // Verificar si el flash está disponible
+        if (!capabilities.torch) {
+            if (typeof window.showNotification === 'function') {
+                window.showNotification('Flash no disponible en este dispositivo');
+            }
+            return;
+        }
+        
+        // Obtener el estado actual del flash
+        const settings = track.getSettings();
+        const currentTorch = settings.torch || false;
+        
+        // Cambiar el estado del flash
+        await track.applyConstraints({
+            advanced: [{ torch: !currentTorch }]
+        });
+        
+        // Actualizar UI del botón
+        const flashBtn = document.getElementById('flash-btn');
+        if (flashBtn) {
+            if (!currentTorch) {
+                flashBtn.innerHTML = '<i class="fas fa-bolt"></i>';
+                flashBtn.classList.add('active');
+            } else {
+                flashBtn.innerHTML = '<i class="far fa-bolt"></i>';
+                flashBtn.classList.remove('active');
+            }
+        }
+        
+        if (typeof window.showNotification === 'function') {
+            window.showNotification(`Flash ${!currentTorch ? 'activado' : 'desactivado'}`);
+        }
+    } catch (error) {
+        console.error('Error al cambiar el flash:', error);
+        
+        if (typeof window.showNotification === 'function') {
+            window.showNotification('Error al cambiar el flash');
+        }
     }
 }
 
@@ -69,7 +229,16 @@ async function loadModel() {
         return { cocoModel: model, mobileNetModel: mobileNetModel };
     } catch (error) {
         console.error('Error cargando modelos:', error);
-        alert('No se pudo cargar los modelos de detección. Intenta recargar la página.');
+        // Ocultar indicador de carga
+        document.getElementById('model-loading').style.display = 'none';
+        
+        // Mostrar error amigable
+        if (typeof window.showNotification === 'function') {
+            window.showNotification('Error al cargar los modelos de detección. Por favor, intenta recargar la página.');
+        } else {
+            alert('Error al cargar los modelos de detección. Por favor, intenta recargar la página.');
+        }
+        
         throw error;
     }
 }
@@ -94,7 +263,7 @@ async function startRealTimeDetection() {
                 // Detectar objetos con COCO-SSD para obtener bounding boxes
                 const predictions = await model.detect(video);
                 
-                // Para cada objeto detectado como posible alimento, usar MobileNet para clasificación más precisa
+                // Filtrar y mejorar predicciones con MobileNet
                 const enhancedPredictions = await enhancePredictionsWithMobileNet(predictions);
                 
                 // Dibujar las detecciones
@@ -103,6 +272,11 @@ async function startRealTimeDetection() {
         }, 200); // Detectar cada 200ms
     } catch (error) {
         console.error('Error iniciando detección en tiempo real:', error);
+        
+        // Mostrar error amigable
+        if (typeof window.showNotification === 'function') {
+            window.showNotification('Error al iniciar la detección en tiempo real');
+        }
     }
 }
 
@@ -168,11 +342,15 @@ async function enhancePredictionsWithMobileNet(predictions) {
                 enhancedResults.push({
                     ...prediction,
                     class: bestMatch.className,
-                    score: bestMatch.probability
+                    score: bestMatch.probability,
+                    imageData: imageData // Guardar la imagen recortada para mostrarla
                 });
             } else {
                 // Mantener la predicción original si MobileNet no encuentra alimentos
-                enhancedResults.push(prediction);
+                enhancedResults.push({
+                    ...prediction,
+                    imageData: imageData // Guardar la imagen recortada para mostrarla
+                });
             }
         } catch (err) {
             console.error('Error al mejorar predicción con MobileNet:', err);
@@ -202,153 +380,122 @@ function drawPredictions(predictions) {
         return;
     }
     
-    // Diccionario de traducciones ampliado
-    const translations = {
-        // Frutas
-        'apple': 'Manzana',
-        'orange': 'Naranja',
-        'banana': 'Plátano',
-        'strawberry': 'Fresa',
-        'pear': 'Pera',
-        'grape': 'Uva',
-        'grapefruit': 'Pomelo',
-        'kiwi': 'Kiwi',
-        'lemon': 'Limón',
-        'lime': 'Lima',
-        'mango': 'Mango',
-        'melon': 'Melón',
-        'nectarine': 'Nectarina',
-        'peach': 'Melocotón',
-        'pineapple': 'Piña',
-        'plum': 'Ciruela',
-        'raspberry': 'Frambuesa',
-        'watermelon': 'Sandía',
-        
-        // Vegetales
-        'broccoli': 'Brócoli',
-        'carrot': 'Zanahoria',
-        'cucumber': 'Pepino',
-        'lettuce': 'Lechuga',
-        'tomato': 'Tomate',
-        'potato': 'Patata',
-        'bell pepper': 'Pimiento',
-        'onion': 'Cebolla',
-        'garlic': 'Ajo',
-        'cabbage': 'Repollo',
-        'eggplant': 'Berenjena',
-        
-        // Comidas preparadas
-        'sandwich': 'Sándwich',
-        'pizza': 'Pizza',
-        'donut': 'Donut',
-        'cake': 'Pastel',
-        'hot dog': 'Perrito caliente',
-        'hamburger': 'Hamburguesa',
-        'french fries': 'Patatas fritas',
-        'salad': 'Ensalada',
-        'burrito': 'Burrito',
-        'taco': 'Taco',
-        'pasta': 'Pasta',
-        'rice dish': 'Plato de arroz',
-        'soup': 'Sopa',
-        'ice cream': 'Helado',
-        'cookie': 'Galleta',
-        'chocolate': 'Chocolate',
-        'sushi': 'Sushi',
-        'steak': 'Filete',
-        'fish': 'Pescado',
-        'chicken': 'Pollo',
-        
-        // Misceláneos
-        'bowl': 'Bol de comida',
-        'cup': 'Taza/Bebida',
-        'dining table': 'Mesa con comida',
-        'food': 'Alimento'
-    };
-    
-    // Dibujar cada predicción
+    // Para cada predicción, dibujar un rectángulo y etiqueta
     predictions.forEach(prediction => {
-        // Extraer datos
+        // Obtener coordenadas del bounding box
         const [x, y, width, height] = prediction.bbox;
-        
-        // Obtener nombre en español o usar el original
-        let className = prediction.class.toLowerCase();
-        // Extraer nombre principal (remover texto después de coma si existe)
-        if (className.includes(',')) {
-            className = className.split(',')[0].trim();
-        }
-        const text = translations[className] || className;
-        
-        const score = Math.round(prediction.score * 100);
         
         // Dibujar rectángulo
         context.strokeStyle = '#4CAF50';
         context.lineWidth = 4;
         context.strokeRect(x, y, width, height);
         
-        // Preparar texto
-        context.fillStyle = '#4CAF50';
-        context.font = 'bold 18px Arial';
-        const textWidth = context.measureText(`${text}: ${score}%`).width;
+        // Preparar texto con clase y probabilidad
+        const className = prediction.class.split(',')[0]; // Tomar solo la primera parte si es complejo
+        const score = Math.round(prediction.score * 100);
+        const text = `${className} (${score}%)`;
         
-        // Dibujar fondo para el texto
-        context.fillStyle = 'rgba(0, 0, 0, 0.6)';
-        context.fillRect(x, y - 25, textWidth + 10, 25);
+        // Configurar estilo para etiqueta
+        context.fillStyle = '#4CAF50';
+        context.fillRect(x, y - 30, context.measureText(text).width + 10, 30);
         
         // Dibujar texto
         context.fillStyle = 'white';
-        context.fillText(`${text}: ${score}%`, x + 5, y - 7);
+        context.font = 'bold 16px Arial';
+        context.fillText(text, x + 5, y - 10);
+        
+        // Mostrar una pequeña área de interacción para capturar
+        context.fillStyle = 'rgba(76, 175, 80, 0.7)';
+        context.fillRect(x + width - 40, y + height - 40, 40, 40);
+        
+        // Icono de captura
+        context.fillStyle = 'white';
+        context.beginPath();
+        context.arc(x + width - 20, y + height - 20, 12, 0, 2 * Math.PI);
+        context.fill();
     });
 }
 
 // Detener la cámara
 function stopCamera() {
-    // Detener detección en tiempo real
+    // Detener el loop de detección
     if (detectionInterval) {
         clearInterval(detectionInterval);
         detectionInterval = null;
     }
     
-    // Detener la transmisión de video
+    // Detener las pistas de video
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
         stream = null;
     }
+    
+    // Limpiar el video y canvas
+    if (video) {
+        video.srcObject = null;
+    }
+    
+    if (context && canvas) {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    
+    console.log('Cámara detenida');
 }
 
 // Capturar imagen desde la cámara
 function captureFromCamera() {
-    return new Promise((resolve, reject) => {
-        if (!video || !canvas || !context) {
-            reject(new Error('La cámara no está inicializada'));
-            return;
-        }
+    if (!video || !canvas || !context) {
+        console.error('No se puede capturar: video o canvas no inicializados');
+        return null;
+    }
+    
+    try {
+        // Dibujar el frame actual en el canvas
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
         
-        try {
-            // Dibujar el frame actual del video en el canvas
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            // Obtener la imagen como una URL de datos
-            const imageData = canvas.toDataURL('image/jpeg');
-            resolve(imageData);
-        } catch (error) {
-            console.error('Error capturando imagen:', error);
-            reject(error);
-        }
-    });
+        // Obtener datos de la imagen
+        const imageData = canvas.toDataURL('image/jpeg');
+        
+        console.log('Imagen capturada correctamente');
+        
+        // Procesar la imagen capturada
+        processImage(imageData).then(results => {
+            if (results && results.length > 0) {
+                console.log('Alimentos reconocidos:', results);
+                displayResults(results, imageData);
+            } else {
+                console.log('No se detectaron alimentos');
+                if (typeof window.showNotification === 'function') {
+                    window.showNotification('No se detectaron alimentos en la imagen');
+                } else {
+                    alert('No se detectaron alimentos en la imagen');
+                }
+            }
+        }).catch(error => {
+            console.error('Error procesando imagen:', error);
+            if (typeof window.showNotification === 'function') {
+                window.showNotification('Error al procesar la imagen');
+            } else {
+                alert('Error al procesar la imagen');
+            }
+        });
+        
+        return imageData;
+    } catch (error) {
+        console.error('Error al capturar imagen:', error);
+        return null;
+    }
 }
 
-// Procesar la imagen
+// Procesar la imagen para identificar alimentos
 async function processImage(imageData) {
     try {
-        // Verificar que imageData exista y sea una cadena válida
-        if (!imageData || typeof imageData !== 'string') {
-            throw new Error('Datos de imagen no válidos');
-        }
-
         console.log('Procesando imagen...');
         
-        // Crear una imagen para pasarla a los modelos
+        // Para desarrollo, simular la detección con datos de ejemplo
+        // TODO: Implementar la integración real con la API de reconocimiento
+        
+        // Crear una imagen para analizar con los modelos
         const img = new Image();
         img.src = imageData;
         
@@ -357,136 +504,310 @@ async function processImage(imageData) {
             img.onload = resolve;
         });
         
-        // Asegurarnos de que los modelos estén cargados
-        await loadModel();
+        // Detectar objetos con COCO-SSD
+        const predictions = await model.detect(img);
+        console.log('Predicciones COCO-SSD:', predictions);
         
-        // Usar ambos modelos para obtener resultados más precisos
-        const cocoResults = await model.detect(img);
+        // Filtrar y mejorar predicciones usando MobileNet
+        const enhancedPredictions = await enhancePredictionsWithMobileNet(predictions);
+        console.log('Predicciones mejoradas:', enhancedPredictions);
         
-        // Para cada detección, usar MobileNet para clasificación más precisa
-        const enhancedResults = await enhancePredictionsWithMobileNet(cocoResults);
-        
-        // Si no tenemos resultados de los modelos, usar datos simulados
-        if (enhancedResults.length === 0) {
-            // Clasificar toda la imagen con MobileNet
-            const classifications = await mobileNetModel.classify(img);
-            
-            // Filtrar solo clasificaciones de alimentos con alta probabilidad
-            const foodClassifications = classifications
-                .filter(c => c.probability > 0.5)
-                .filter(c => 
-                    c.className.toLowerCase().includes('food') ||
-                    c.className.toLowerCase().includes('fruit') ||
-                    c.className.toLowerCase().includes('vegetable') ||
-                    c.className.toLowerCase().includes('dish') ||
-                    c.className.toLowerCase().includes('meal')
-                );
-            
-            if (foodClassifications.length > 0) {
-                // Convertir clasificaciones a formato de respuesta
-                return foodClassifications.map(item => {
-                    // Extraer nombre principal (antes de la coma)
-                    let name = item.className;
-                    if (name.includes(',')) {
-                        name = name.split(',')[0].trim();
-                    }
-                    
-                    // Buscar traducción
-                    const translations = {
-                        'apple': 'Manzana',
-                        'banana': 'Plátano',
-                        'orange': 'Naranja',
-                        'strawberry': 'Fresa',
-                        // (más traducciones del objeto translations anterior...)
-                    };
-                    
-                    return {
-                        id: Math.floor(Math.random() * 1000) + 1,
-                        name: translations[name.toLowerCase()] || name,
-                        calories: Math.floor(Math.random() * 300) + 50,
-                        portion: '1 porción (100g)',
-                        protein: (Math.random() * 20).toFixed(1),
-                        carbs: (Math.random() * 30).toFixed(1),
-                        fat: (Math.random() * 15).toFixed(1),
-                        fiber: (Math.random() * 5).toFixed(1),
-                        image: imageData,
-                        confidence: Math.round(item.probability * 100),
-                        recommendations: 'Recomendación nutricional para este alimento.'
-                    };
-                });
-            }
-            
-            // Si no podemos clasificar, devolver un resultado simulado
-            return [{
-                id: 1,
-                name: 'Alimento no identificado',
-                calories: 100,
-                portion: '1 porción (100g)',
-                protein: 5,
-                carbs: 15,
-                fat: 2,
-                fiber: 3,
-                image: imageData,
-                recommendations: 'No se pudo identificar con precisión. Intente con otra foto o mejor iluminación.'
-            }];
+        // Si hay predicciones, convertirlas al formato esperado por la aplicación
+        if (enhancedPredictions && enhancedPredictions.length > 0) {
+            return enhancedPredictions.map(prediction => {
+                // Crear información nutricional simulada basada en el tipo de alimento
+                let nutrients = simulateNutrients(prediction.class);
+                
+                return {
+                    name: prediction.class,
+                    probability: prediction.score,
+                    image: prediction.imageData || imageData,
+                    nutrients: nutrients
+                };
+            });
         }
         
-        // Convertir resultados a formato de respuesta
-        return enhancedResults.map(item => {
-            // Extraer nombre principal (antes de la coma)
-            let name = item.class;
-            if (name.includes(',')) {
-                name = name.split(',')[0].trim();
+        // Si no hay predicciones, devolver datos simulados para pruebas
+        // En producción, aquí se devolvería un array vacío
+        return [{
+            name: 'Alimento no identificado',
+            probability: 0.6,
+            image: imageData,
+            nutrients: {
+                energy: 250,
+                protein: 10,
+                carbohydrates: 30,
+                fat: 8,
+                fiber: 5
             }
-            
-            return {
-                id: Math.floor(Math.random() * 1000) + 1,
-                name: name,
-                calories: Math.floor(Math.random() * 300) + 50,
-                portion: '1 porción (100g)',
-                protein: (Math.random() * 20).toFixed(1),
-                carbs: (Math.random() * 30).toFixed(1),
-                fat: (Math.random() * 15).toFixed(1),
-                fiber: (Math.random() * 5).toFixed(1),
-                image: imageData,
-                confidence: Math.round(item.score * 100),
-                recommendations: 'Recomendación nutricional para este alimento.'
-            };
-        });
+        }];
     } catch (error) {
-        console.error('Error al procesar la imagen:', error);
-        // Re-lanzar el error para que pueda ser manejado por el llamador
-        throw new Error('No se pudo procesar la imagen: ' + error.message);
+        console.error('Error en el procesamiento de imagen:', error);
+        throw error;
     }
 }
 
-// Manejar cambios de orientación del dispositivo
+// Simular información nutricional para diferentes tipos de alimentos
+function simulateNutrients(foodClass) {
+    // Categorías generales de alimentos
+    const foodCategories = {
+        // Frutas
+        'fruit': { energy: 60, protein: 1, carbohydrates: 15, fat: 0, fiber: 3 },
+        'apple': { energy: 52, protein: 0.3, carbohydrates: 14, fat: 0.2, fiber: 2.4 },
+        'banana': { energy: 96, protein: 1.1, carbohydrates: 22, fat: 0.2, fiber: 2.6 },
+        'orange': { energy: 47, protein: 0.9, carbohydrates: 12, fat: 0.1, fiber: 2.4 },
+        
+        // Verduras
+        'vegetable': { energy: 30, protein: 2, carbohydrates: 5, fat: 0, fiber: 3 },
+        'carrot': { energy: 41, protein: 0.9, carbohydrates: 10, fat: 0.2, fiber: 2.8 },
+        'broccoli': { energy: 34, protein: 2.8, carbohydrates: 7, fat: 0.4, fiber: 2.6 },
+        
+        // Comida rápida
+        'pizza': { energy: 285, protein: 12, carbohydrates: 36, fat: 10, fiber: 2.5 },
+        'hamburger': { energy: 295, protein: 15, carbohydrates: 30, fat: 14, fiber: 1.4 },
+        'hot dog': { energy: 290, protein: 10, carbohydrates: 18, fat: 16, fiber: 0 },
+        
+        // Postres
+        'cake': { energy: 340, protein: 5, carbohydrates: 55, fat: 15, fiber: 0.8 },
+        'donut': { energy: 280, protein: 3, carbohydrates: 34, fat: 15, fiber: 1 },
+        
+        // Por defecto
+        'default': { energy: 150, protein: 5, carbohydrates: 20, fat: 7, fiber: 2 }
+    };
+    
+    // Normalizar el nombre de clase para buscar en nuestras categorías
+    const normalizedClass = foodClass.toLowerCase();
+    
+    // Buscar la categoría que mejor coincida
+    for (const category in foodCategories) {
+        if (normalizedClass.includes(category)) {
+            return foodCategories[category];
+        }
+    }
+    
+    // Si no coincide con ninguna categoría, devolver valores por defecto
+    return foodCategories.default;
+}
+
+// Mostrar resultados de la detección
+function displayResults(results, originalImage) {
+    console.log('Mostrando resultados:', results);
+    
+    // Cambiar a la pantalla de resultados
+    const resultScreen = document.getElementById('result-screen');
+    if (resultScreen) {
+        // Mostrar la pantalla
+        document.querySelectorAll('.screen').forEach(screen => {
+            screen.classList.remove('active');
+        });
+        resultScreen.classList.add('active');
+        
+        // Mostrar la imagen capturada
+        const capturedImage = document.getElementById('captured-image');
+        if (capturedImage && originalImage) {
+            capturedImage.src = originalImage;
+        }
+        
+        // Mostrar información del primer alimento detectado (el más probable)
+        const food = results[0];
+        
+        // Nombre del alimento
+        const foodNameElement = document.getElementById('food-name');
+        if (foodNameElement) {
+            foodNameElement.textContent = food.name;
+        }
+        
+        // Información nutricional
+        const nutrients = food.nutrients || {};
+        
+        const caloriesElement = document.getElementById('calories-value');
+        if (caloriesElement) {
+            caloriesElement.textContent = nutrients.energy ? `${nutrients.energy} kcal` : '--';
+        }
+        
+        const proteinElement = document.getElementById('protein-value');
+        if (proteinElement) {
+            proteinElement.textContent = nutrients.protein ? `${nutrients.protein}g` : '--';
+        }
+        
+        const carbsElement = document.getElementById('carbs-value');
+        if (carbsElement) {
+            carbsElement.textContent = nutrients.carbohydrates ? `${nutrients.carbohydrates}g` : '--';
+        }
+        
+        const fatElement = document.getElementById('fat-value');
+        if (fatElement) {
+            fatElement.textContent = nutrients.fat ? `${nutrients.fat}g` : '--';
+        }
+        
+        // Detalles adicionales
+        const detailsContainer = document.getElementById('food-details');
+        if (detailsContainer) {
+            // Información nutricional detallada
+            let detailsHTML = `
+                <h3>Información Nutricional Detallada</h3>
+                <div class="nutrition-table">
+                    <div class="nutrition-row">
+                        <span class="nutrition-name">Calorías</span>
+                        <span class="nutrition-value">${nutrients.energy || 0} kcal</span>
+                    </div>
+                    <div class="nutrition-row">
+                        <span class="nutrition-name">Proteínas</span>
+                        <span class="nutrition-value">${nutrients.protein || 0}g</span>
+                    </div>
+                    <div class="nutrition-row">
+                        <span class="nutrition-name">Carbohidratos</span>
+                        <span class="nutrition-value">${nutrients.carbohydrates || 0}g</span>
+                    </div>
+                    <div class="nutrition-row">
+                        <span class="nutrition-name">Grasas</span>
+                        <span class="nutrition-value">${nutrients.fat || 0}g</span>
+                    </div>
+                    <div class="nutrition-row">
+                        <span class="nutrition-name">Fibra</span>
+                        <span class="nutrition-value">${nutrients.fiber || 0}g</span>
+                    </div>
+                </div>
+                
+                <h3>Compatibilidad con tu objetivo</h3>
+                <div class="compatibility-info">
+                    <div class="compatibility-indicator ${getCompatibilityClass(food, nutrients)}">
+                        ${getCompatibilityMessage(food, nutrients)}
+                    </div>
+                </div>
+            `;
+            
+            detailsContainer.innerHTML = detailsHTML;
+        }
+        
+        // Configurar botones
+        const addToDiaryBtn = document.getElementById('add-to-diary-btn');
+        if (addToDiaryBtn) {
+            addToDiaryBtn.onclick = () => addFoodToDiary(food);
+        }
+        
+        const scanAgainBtn = document.getElementById('scan-again-btn');
+        if (scanAgainBtn) {
+            scanAgainBtn.onclick = () => {
+                document.querySelectorAll('.screen').forEach(screen => {
+                    screen.classList.remove('active');
+                });
+                document.getElementById('scanner-screen').classList.add('active');
+            };
+        }
+    } else {
+        console.error('Pantalla de resultados no encontrada');
+    }
+}
+
+// Determinar la clase CSS para el indicador de compatibilidad
+function getCompatibilityClass(food, nutrients) {
+    // Esta función se podría mejorar con lógica real basada en los objetivos del usuario
+    if (nutrients.energy > 300) {
+        return 'compatibility-warning';
+    } else if (nutrients.protein > 15) {
+        return 'compatibility-good';
+    } else {
+        return 'compatibility-neutral';
+    }
+}
+
+// Generar mensaje de compatibilidad
+function getCompatibilityMessage(food, nutrients) {
+    // Esta función se podría mejorar con lógica real basada en los objetivos del usuario
+    if (nutrients.energy > 300) {
+        return 'Alto en calorías. Considerar porciones más pequeñas.';
+    } else if (nutrients.protein > 15) {
+        return 'Buena fuente de proteínas. Ideal para tu objetivo.';
+    } else {
+        return 'Neutral para tu objetivo actual.';
+    }
+}
+
+// Añadir alimento al diario
+function addFoodToDiary(food) {
+    // Aquí se mostraría la pantalla para seleccionar el tipo de comida
+    // (desayuno, almuerzo, cena, etc.)
+    console.log('Añadiendo alimento al diario:', food);
+    
+    // Mostrar la pantalla de añadir al diario
+    const addToLogScreen = document.getElementById('add-to-log-screen');
+    if (addToLogScreen) {
+        // Mostrar la pantalla
+        document.querySelectorAll('.screen').forEach(screen => {
+            screen.classList.remove('active');
+        });
+        addToLogScreen.classList.add('active');
+        
+        // Actualizar el nombre del alimento
+        const logFoodName = document.getElementById('log-food-name');
+        if (logFoodName) {
+            logFoodName.textContent = food.name;
+        }
+        
+        // Configurar los botones de tipo de comida
+        const mealTypeButtons = document.querySelectorAll('.meal-type-btn');
+        mealTypeButtons.forEach(btn => {
+            btn.onclick = () => {
+                const mealType = btn.getAttribute('data-meal-type');
+                
+                // Aquí se guardaría el alimento en la base de datos
+                // Simulamos la operación por ahora
+                setTimeout(() => {
+                    if (typeof window.showNotification === 'function') {
+                        window.showNotification(`${food.name} añadido a ${mealType}`);
+                    } else {
+                        alert(`${food.name} añadido a ${mealType}`);
+                    }
+                    
+                    // Volver a la pantalla de inicio
+                    document.querySelectorAll('.screen').forEach(screen => {
+                        screen.classList.remove('active');
+                    });
+                    document.getElementById('home-screen').classList.add('active');
+                }, 500);
+            };
+        });
+    } else {
+        // Si no existe la pantalla, mostrar una notificación simple
+        if (typeof window.showNotification === 'function') {
+            window.showNotification(`${food.name} añadido al diario`);
+        } else {
+            alert(`${food.name} añadido al diario`);
+        }
+    }
+}
+
+// Eventos para manejar orientación y visibilidad
 window.addEventListener('orientationchange', () => {
-    // Ajustar el tamaño del canvas cuando cambia la orientación
+    // Ajustar dimensiones del canvas cuando cambia la orientación
     if (video && canvas) {
         setTimeout(() => {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-        }, 300); // Pequeño retraso para que el cambio de orientación se complete
+        }, 300);
     }
 });
 
-// Manejar cambios de visibilidad de la página
 document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') {
-        // Pausar detección cuando la página no es visible para ahorrar recursos
+    // Detener la cámara cuando la página no está visible
+    if (document.hidden) {
         if (detectionInterval) {
             clearInterval(detectionInterval);
-            detectionInterval = null;
         }
-    } else if (document.visibilityState === 'visible' && video && !detectionInterval) {
-        // Reiniciar detección cuando la página vuelve a ser visible
-        startRealTimeDetection();
+    } else {
+        // Reiniciar la detección cuando la página vuelve a ser visible
+        if (video && video.srcObject) {
+            startRealTimeDetection();
+        }
     }
 });
 
 // Exportar funciones para uso externo
-window.initCamera = initCamera;
-window.stopCamera = stopCamera;
-window.captureFromCamera = captureFromCamera;
-window.processImage = processImage;
+export {
+    initCamera,
+    stopCamera,
+    captureFromCamera,
+    processImage,
+    displayResults
+};
